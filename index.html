@@ -1,216 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Steel Takeoff Viewer</title>
-<style>
-  body { margin:0; background:#1a1d21; color:#ddd; font:13px/1.4 system-ui; overflow:hidden }
-  #hud { position:fixed; top:0; left:0; right:0; padding:8px 12px; background:#24282edd;
-         display:flex; gap:16px; align-items:center; z-index:10 }
-  #hud label { cursor:pointer } #hud input { vertical-align:-2px }
-  #status { margin-left:auto; color:#8f8; font-size:12px }
-  #info { position:fixed; bottom:0; left:0; padding:6px 12px; color:#889; font-size:12px }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Steel Takeoff — 3-4 Bourne Hill Close</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="hud">
-  <b>Steel Takeoff Viewer</b>
-  <label><input type="checkbox" id="cb2d" checked> 2D sheet</label>
-  <label><input type="checkbox" id="cb3d" checked> 3D model</label>
-  <label><input type="checkbox" id="cbMark" checked> markings</label>
-  <label><input type="checkbox" id="cbText" checked> text</label>
-  <label><input type="checkbox" id="cbGrid" checked> grid</label>
-  <span id="status">loading…</span>
-</div>
-<div id="info">drag = orbit · wheel = zoom · right-drag = pan</div>
+<header id="topbar">
+  <div class="brand">
+    <div class="brand-mark">ST</div>
+    <div>
+      <div class="brand-title">Steel Takeoff Viewer</div>
+      <div class="brand-sub" id="project-sub">—</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="chip chip-dim" id="chip-drawings"></span>
+    <span class="chip chip-warn">AI-assisted · verify before order</span>
+  </div>
+</header>
+
+<section id="kpis">
+  <div class="kpi"><div class="kpi-label">Net steel</div><div class="kpi-value" id="kpi-net">—</div><div class="kpi-unit">tonnes</div></div>
+  <div class="kpi"><div class="kpi-label">Order quantity</div><div class="kpi-value" id="kpi-order">—</div><div class="kpi-unit">incl. waste allowance</div></div>
+  <div class="kpi"><div class="kpi-label">Quote</div><div class="kpi-value" id="kpi-quote">—</div><div class="kpi-unit" id="kpi-quote-sub">incl. OH&amp;P</div></div>
+  <div class="kpi"><div class="kpi-label">Member marks</div><div class="kpi-value" id="kpi-marks">—</div><div class="kpi-unit">B1–B5, P1 + fittings</div></div>
+  <div class="kpi kpi-warn"><div class="kpi-label">To verify</div><div class="kpi-value" id="kpi-verify">—</div><div class="kpi-unit">estimated / missing</div></div>
+</section>
+
+<main id="main">
+  <section id="viewport-wrap">
+    <div id="viewport-bar">
+      <div class="tb-group">
+        <span class="tb-label">Layers</span>
+        <button class="tb-btn active" data-layer="sheet">2D sheet</button>
+        <button class="tb-btn active" data-layer="model">3D model</button>
+        <button class="tb-btn active" data-layer="marks">Markings</button>
+        <button class="tb-btn" data-layer="text">Text</button>
+        <button class="tb-btn active" data-layer="grid">Grid</button>
+      </div>
+      <div class="tb-group">
+        <span class="tb-label">Camera</span>
+        <button class="tb-btn" data-cam="iso">Iso</button>
+        <button class="tb-btn" data-cam="top">Top</button>
+        <button class="tb-btn" data-cam="front">Front</button>
+      </div>
+      <div class="tb-spacer"></div>
+      <span id="sel-info" class="sel-info">click a member or table row</span>
+    </div>
+    <div id="viewport"></div>
+  </section>
+
+  <aside id="panel">
+    <nav id="tabs">
+      <button class="tab active" data-tab="schedule">Schedule</button>
+      <button class="tab" data-tab="quote">Quote</button>
+      <button class="tab" data-tab="procurement">Procurement</button>
+      <button class="tab" data-tab="qa">QA</button>
+    </nav>
+    <div id="tab-schedule" class="tabpage active"></div>
+    <div id="tab-quote" class="tabpage"></div>
+    <div id="tab-procurement" class="tabpage"></div>
+    <div id="tab-qa" class="tabpage"></div>
+  </aside>
+</main>
+
+<footer id="footer">
+  <span id="foot-src"></span>
+  <span id="foot-gen"></span>
+</footer>
+
 <script type="importmap">{"imports":{"three":"./lib/three.module.js"}}</script>
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from './lib/OrbitControls.js';
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a1d21);
-const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 5e6);
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
-const controls = new OrbitControls(camera, renderer.domElement);
-scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(1,2,3); scene.add(sun);
-
-addEventListener('resize', () => {
-  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
-
-const g2d = new THREE.Group(), g3d = new THREE.Group(),
-      gMark = new THREE.Group(), gText = new THREE.Group(), gGrid = new THREE.Group();
-scene.add(g2d, g3d, gMark, gText, gGrid);
-const bind = (id, g) => document.getElementById(id).onchange = e => g.visible = e.target.checked;
-bind('cb2d', g2d); bind('cb3d', g3d); bind('cbMark', gMark); bind('cbText', gText); bind('cbGrid', gGrid);
-
-async function fetchJSON(url) {
-  const r = await fetch(url);
-  if (url.endsWith('.gz')) {
-    const ds = new DecompressionStream('gzip');
-    const txt = await new Response(r.body.pipeThrough(ds)).text();
-    return JSON.parse(txt);
-  }
-  return r.json();
-}
-
-function col3(c, fallback=0xcccccc) {
-  return c ? new THREE.Color(c[0], c[1], c[2]) : new THREE.Color(fallback);
-}
-
-// ---- 2D sheet (PDF points; y flipped, centred on bbox) ----
-function buildSheet(dwg) {
-  g2d.clear(); gText.clear();
-  const page = dwg.pages[0];
-  const lines = [], lineCol = [], fills = [];
-  let minx=1e9, miny=1e9, maxx=-1e9, maxy=-1e9;
-  const track = (x,y) => { minx=Math.min(minx,x); miny=Math.min(miny,y); maxx=Math.max(maxx,x); maxy=Math.max(maxy,y); };
-  const push = (x0,y0,x1,y1,c) => { lines.push(x0,-y0,0, x1,-y1,0); lineCols.push(c.r,c.g,c.b,c.r,c.g,c.b); };
-  const lineCols = [];
-  for (const p of page.paths) {
-    const sc = col3(p.stroke), fc = p.fill ? col3(p.fill, 0x000000) : null;
-    let shapePts = [];
-    for (const it of p.items) {
-      if (it[0]==='l') {
-        if (p.op!=='f') push(it[1][0],it[1][1], it[2][0],it[2][1], sc);
-        shapePts.push([it[1][0],it[1][1]],[it[2][0],it[2][1]]);
-        track(it[1][0],it[1][1]); track(it[2][0],it[2][1]);
-      } else if (it[0]==='c') {
-        let prev = it[1];
-        for (let i=1;i<=12;i++) {
-          const t=i/12, mt=1-t;
-          const x = mt*mt*mt*it[1][0] + 3*mt*mt*t*it[2][0] + 3*mt*t*t*it[3][0] + t*t*t*it[4][0];
-          const y = mt*mt*mt*it[1][1] + 3*mt*mt*t*it[2][1] + 3*mt*t*t*it[3][1] + t*t*t*it[4][1];
-          if (p.op!=='f') push(prev[0],prev[1], x,y, sc);
-          shapePts.push([x,y]); track(x,y); prev=[x,y];
-        }
-      } else if (it[0]==='re') {
-        const [x0,y0,x1,y1] = it[1];
-        if (p.op!=='f') { push(x0,y0,x1,y0,sc); push(x1,y0,x1,y1,sc); push(x1,y1,x0,y1,sc); push(x0,y1,x0,y0,sc); }
-        shapePts.push([x0,y0],[x1,y0],[x1,y1],[x0,y1]);
-        track(x0,y0); track(x1,y1);
-      } else if (it[0]==='qu') {
-        const q = it[1];
-        for (let i=0;i<4;i++) { const a=q[i], b=q[(i+1)%4]; if (p.op!=='f') push(a[0],a[1],b[0],b[1],sc); shapePts.push([a[0],a[1]]); track(a[0],a[1]); }
-      }
-    }
-    if (fc && p.op!=='s' && shapePts.length>2) {
-      const sh = new THREE.Shape(shapePts.map(pt => new THREE.Vector2(pt[0], -pt[1])));
-      fills.push({shape: sh, color: fc});
-    }
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(lineCols, 3));
-  g2d.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({vertexColors:true})));
-  for (const f of fills.slice(0, 8000)) {
-    const m = new THREE.Mesh(new THREE.ShapeGeometry(f.shape),
-      new THREE.MeshBasicMaterial({color:f.color, side:THREE.DoubleSide}));
-    m.position.z = -0.1; g2d.add(m);
-  }
-  const cx=(minx+maxx)/2, cy=-(miny+maxy)/2;
-  const paper = new THREE.Mesh(
-    new THREE.PlaneGeometry(maxx-minx+60, maxy-miny+60),
-    new THREE.MeshBasicMaterial({color:0xf5f2ea}));
-  paper.position.set(cx, cy, -1);
-  g2d.add(paper);
-  g2d.position.set(-cx, -cy, 0);
-  g2d.userData.span = Math.max(maxx-minx, maxy-miny);
-
-  // text as sprites
-  const spans = page.text.slice(0, 3000);
-  for (const s of spans) {
-    const c = document.createElement('canvas');
-    const fs = 48; c.width = Math.max(2, s.t.length*fs*0.62); c.height = fs*1.4;
-    const ctx = c.getContext('2d');
-    ctx.font = `${fs}px ${s.font||'Arial'}`; ctx.fillStyle = '#eee';
-    ctx.fillText(s.t, 0, fs);
-    const tex = new THREE.CanvasTexture(c);
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-    const h = s.size*1.4, w = h*c.width/c.height;
-    sp.scale.set(w, h, 1);
-    sp.center.set(0, 0.5);
-    sp.position.set(s.o[0], -s.o[1], 0.5);
-    if (s.dir && Math.abs(s.dir[1])>0.5) sp.material.rotation = s.dir[1]>0 ? Math.PI/2 : -Math.PI/2;
-    gText.add(sp);
-  }
-  gText.position.copy(g2d.position);
-  return g2d.userData.span;
-}
-
-// ---- 3D steel model (mm) ----
-function buildModel(model, offsetX) {
-  g3d.clear(); gMark.clear(); gGrid.clear();
-  const mat = new THREE.MeshStandardMaterial({color:0x8fb8ff, metalness:0.4, roughness:0.5});
-  const ringMat = new THREE.MeshBasicMaterial({color:0xff3333, side:THREE.DoubleSide});
-  for (const m of model.members) {
-    for (const s of m.segments) {
-      const a = new THREE.Vector3(...s.from), b = new THREE.Vector3(...s.to);
-      const len = a.distanceTo(b);
-      const box = new THREE.Mesh(new THREE.BoxGeometry(len, m.depth_mm, m.width_mm), mat);
-      box.position.copy(a).add(b).multiplyScalar(0.5);
-      box.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0), b.clone().sub(a).normalize());
-      g3d.add(box);
-      const ring = new THREE.Mesh(new THREE.RingGeometry(220, 300, 32), ringMat);
-      ring.position.copy(box.position).z += m.depth_mm;
-      gMark.add(ring);
-      const cv = document.createElement('canvas'); cv.width=128; cv.height=64;
-      const ctx = cv.getContext('2d'); ctx.font='56px Arial'; ctx.fillStyle='#ff4444';
-      ctx.fillText(m.mark, 8, 48);
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv), transparent:true}));
-      sp.scale.set(900, 450, 1); sp.position.copy(box.position).z += 600;
-      gMark.add(sp);
-    }
-  }
-  // grid floor
-  const g = model.grids;
-  const pts = [], cols = [];
-  const gc = new THREE.Color(0x3a4048);
-  for (const [k,x] of Object.entries(g.x_grids)) { pts.push(x,0,0, x,-22000,0); cols.push(gc,gc); }
-  for (const [k,y] of Object.entries(g.y_grids)) { pts.push(0,-y,0, 22000,-y,0); cols.push(gc,gc); }
-  const gg = new THREE.BufferGeometry();
-  const flat = [];
-  for (const c of cols) flat.push(c.r,c.g,c.b);
-  gg.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
-  gg.setAttribute('color', new THREE.Float32BufferAttribute(flat,3));
-  gGrid.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({vertexColors:true})));
-  const box3 = new THREE.Box3().setFromObject(g3d);
-  const c3 = box3.getCenter(new THREE.Vector3());
-  const size3 = box3.getSize(new THREE.Vector3());
-  const modelSpan = Math.max(size3.x, size3.y, 1);
-  const k = offsetX * 0.55 / modelSpan;   // offsetX carries the sheet span
-  for (const grp of [g3d, gMark, gGrid]) {
-    grp.scale.setScalar(k);
-    grp.position.set((offsetX*0.62 - c3.x*k), -c3.y*k, -c3.z*k);
-  }
-}
-
-async function loadAll() {
-  const st = document.getElementById('status');
-  try {
-    const dwg = await fetchJSON('data/output/roof_plan.dwg.json.gz');
-    const span = buildSheet(dwg);
-    let off = span;
-    try {
-      const model = await fetchJSON('data/output/model_3d.json');
-      buildModel(model, off);
-    } catch { st.textContent = 'sheet loaded (no 3D model yet)'; }
-    const fit = span*0.9;
-    camera.position.set(fit*0.3, -fit*1.25, fit*0.85);
-    controls.target.set(fit*0.3, 0, 0);
-    controls.update();
-    st.textContent = 'live · ' + new Date().toLocaleTimeString();
-  } catch (e) { st.textContent = 'load failed: ' + e.message; }
-}
-
-try { new EventSource('events').onmessage = () => loadAll(); } catch {}  // live reload only when served by server.py
-loadAll();
-(function anim(){ requestAnimationFrame(anim); renderer.render(scene, camera); })();
-</script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,743 @@
+{
+ "format": "takeoff-app/1",
+ "generated": "2026-10-29T23:36:10+00:00",
+ "project": {
+  "name": "3-4 Bourne Hill Close, London N13 4LX",
+  "job": "14017",
+  "package": "Roof support steelwork",
+  "drawings": [
+   "14017/05 rev B \u2014 Proposed Roof Plan",
+   "14017/08 \u2014 Roof Sections & Details"
+  ],
+  "engineer": "Halstead Associates"
+ },
+ "summary": {
+  "member_mass_kg": 2274.8,
+  "plate_mass_kg": 62.5,
+  "net_t": 2.337,
+  "order_t": 2.454203661,
+  "quote_total": 9132.07,
+  "currency": "GBP",
+  "n_marks": 6,
+  "n_to_verify": 6
+ },
+ "members": [
+  {
+   "mark": "B1",
+   "section": "203x203x46 UKC",
+   "qty": 2,
+   "length_mm": 11500.0,
+   "kg_m": 46.1,
+   "mass_kg": 1060.3,
+   "status": "ESTIMATED",
+   "location": "Grids D & F, left/right block, cranked at grid 2",
+   "source": "14017/05 plan; Section J-J drg 14017/08",
+   "notes": "Developed length estimated from grid dims 3150+5098+2250 = 10498 plus crank allowance ~1.0m; verify against fabricator setting-out"
+  },
+  {
+   "mark": "B2",
+   "section": "152x152x37 UKC",
+   "qty": 2,
+   "length_mm": 4915.0,
+   "kg_m": 37.0,
+   "mass_kg": 363.7,
+   "status": "ESTIMATED",
+   "location": "Grids D & F runs, grids 4-5",
+   "source": "14017/05 plan; Section H-H drg 14017/08",
+   "notes": "Length = grid spacing 4-5 (4915)"
+  },
+  {
+   "mark": "B3",
+   "section": "152x152x30 UKC",
+   "qty": 2,
+   "length_mm": 5530.0,
+   "kg_m": 30.0,
+   "mass_kg": 331.8,
+   "status": "ESTIMATED",
+   "location": "Vertical members grid 2 & grid 5, grids D-F",
+   "source": "14017/05 plan",
+   "notes": "Length = grid spacing D-E (5530)"
+  },
+  {
+   "mark": "B4",
+   "section": "152x152x30 UKC",
+   "qty": 2,
+   "length_mm": 1500.0,
+   "kg_m": 30.0,
+   "mass_kg": 90.0,
+   "status": "ESTIMATED",
+   "location": "Short segments adjacent to crank, grid 5",
+   "source": "Section H-H drg 14017/08",
+   "notes": "Short segment between 37kg and 23kg runs; length not dimensioned - estimated"
+  },
+  {
+   "mark": "B5",
+   "section": "152x152x23 UKC",
+   "qty": 2,
+   "length_mm": 6900.0,
+   "kg_m": 23.0,
+   "mass_kg": 317.4,
+   "status": "ESTIMATED",
+   "location": "Cranked raking member grid 5-6 to eaves",
+   "source": "Section H-H drg 14017/08",
+   "notes": "Grid 5-6 (4873) + raking crank to eaves (~2.0m developed); roof pitch not stated - verify"
+  },
+  {
+   "mark": "P1",
+   "section": "200x100x6.3 RHS",
+   "qty": 2,
+   "length_mm": 2000.0,
+   "kg_m": 27.9,
+   "mass_kg": 111.6,
+   "status": "MISSING",
+   "location": "Posts at Detail W locations",
+   "source": "Detail W drg 14017/08",
+   "notes": "POST HEIGHT NOT STATED ON DRAWINGS - 2.0m placeholder; confirm with engineer"
+  }
+ ],
+ "plates": [
+  {
+   "mark": "PL1",
+   "description": "Baseplate (Detail X)",
+   "size": "300x350x10",
+   "qty": 4,
+   "mass_kg": 33.0,
+   "source": "Bearing of 203x203x46 UKC on PC floor",
+   "notes": "Plan on Detail X drg 14017/08"
+  },
+  {
+   "mark": "PL2",
+   "description": "Baseplate (Detail Y)",
+   "size": "275x300x10",
+   "qty": 2,
+   "mass_kg": 13.0,
+   "source": "Bearing of 152x152x23 UKC on PC floor",
+   "notes": "Plan on Detail Y drg 14017/08"
+  },
+  {
+   "mark": "PL3",
+   "description": "Cap plate (Detail W)",
+   "size": "220x260x8",
+   "qty": 2,
+   "mass_kg": 7.2,
+   "source": "RHS post cap, beams over",
+   "notes": "Plan on Detail W drg 14017/08"
+  },
+  {
+   "mark": "PL4",
+   "description": "End plate (Detail W)",
+   "size": "200x150x10",
+   "qty": 4,
+   "mass_kg": 9.4,
+   "source": "Beam ends at Detail W",
+   "notes": "Detail W drg 14017/08"
+  }
+ ],
+ "fasteners": [
+  {
+   "description": "M12 gr 8.8 resin anchor c/w RAWL R-KEM adhesive + mesh sleeve",
+   "qty": 24,
+   "unit_cost": 8.0,
+   "notes": "140mm min embedment"
+  },
+  {
+   "description": "M16 gr 8.8 bolt",
+   "qty": 8,
+   "unit_cost": 6.0,
+   "notes": ""
+  }
+ ],
+ "quote": {
+  "currency": "GBP",
+  "items": [
+   {
+    "item": "Material supply",
+    "qty": 2.454,
+    "unit": "t",
+    "rate": 1500.0,
+    "total": 3681.31
+   },
+   {
+    "item": "Fabrication",
+    "qty": 2.337,
+    "unit": "t",
+    "rate": 850.0,
+    "total": 1986.74
+   },
+   {
+    "item": "Surface treatment (primer)",
+    "qty": 2.337,
+    "unit": "t",
+    "rate": 120.0,
+    "total": 280.48
+   },
+   {
+    "item": "Erection",
+    "qty": 2.337,
+    "unit": "t",
+    "rate": 600.0,
+    "total": 1402.4
+   },
+   {
+    "item": "Delivery",
+    "qty": 1,
+    "unit": "ls",
+    "rate": 350.0,
+    "total": 350.0
+   },
+   {
+    "item": "Fasteners / resin anchors",
+    "qty": 1,
+    "unit": "ls",
+    "rate": 240.0,
+    "total": 240.0
+   }
+  ],
+  "subtotal": 7940.93,
+  "overhead_profit_pct": 15.0,
+  "overhead_profit": 1191.14,
+  "total": 9132.07,
+  "procurement": {
+   "net_t": 2.33733682,
+   "waste_pct": 5.0,
+   "order_t": 2.454203661
+  }
+ },
+ "manhours": {
+  "fabrication_hours": 65.4,
+  "erection_hours": 23.4
+ },
+ "cut_list": [
+  {
+   "bar": 1,
+   "section": "203x203x46 UKC",
+   "pieces": [
+    {
+     "mark": "B1",
+     "length_mm": 11500.0
+    }
+   ],
+   "offcut_mm": 500.0,
+   "stock_mm": 12000
+  },
+  {
+   "bar": 2,
+   "section": "203x203x46 UKC",
+   "pieces": [
+    {
+     "mark": "B1",
+     "length_mm": 11500.0
+    }
+   ],
+   "offcut_mm": 500.0,
+   "stock_mm": 12000
+  },
+  {
+   "bar": 3,
+   "section": "152x152x23 UKC",
+   "pieces": [
+    {
+     "mark": "B5",
+     "length_mm": 6900.0
+    }
+   ],
+   "offcut_mm": 5100.0,
+   "stock_mm": 12000
+  },
+  {
+   "bar": 4,
+   "section": "152x152x23 UKC",
+   "pieces": [
+    {
+     "mark": "B5",
+     "length_mm": 6900.0
+    }
+   ],
+   "offcut_mm": 5100.0,
+   "stock_mm": 12000
+  },
+  {
+   "bar": 5,
+   "section": "152x152x30 UKC",
+   "pieces": [
+    {
+     "mark": "B3",
+     "length_mm": 5530.0
+    },
+    {
+     "mark": "B3",
+     "length_mm": 5530.0
+    }
+   ],
+   "offcut_mm": 940.0,
+   "stock_mm": 12000
+  },
+  {
+   "bar": 6,
+   "section": "152x152x37 UKC",
+   "pieces": [
+    {
+     "mark": "B2",
+     "length_mm": 4915.0
+    },
+    {
+     "mark": "B2",
+     "length_mm": 4915.0
+    }
+   ],
+   "offcut_mm": 2170.0,
+   "stock_mm": 12000
+  },
+  {
+   "bar": 7,
+   "section": "200x100x6.3 RHS",
+   "pieces": [
+    {
+     "mark": "P1",
+     "length_mm": 2000.0
+    },
+    {
+     "mark": "P1",
+     "length_mm": 2000.0
+    }
+   ],
+   "offcut_mm": 8000.0,
+   "stock_mm": 12000
+  },
+  {
+   "bar": 8,
+   "section": "152x152x30 UKC",
+   "pieces": [
+    {
+     "mark": "B4",
+     "length_mm": 1500.0
+    },
+    {
+     "mark": "B4",
+     "length_mm": 1500.0
+    }
+   ],
+   "offcut_mm": 9000.0,
+   "stock_mm": 12000
+  }
+ ],
+ "assumptions": [
+  {
+   "mark": "B1",
+   "text": "Developed length estimated from grid dims 3150+5098+2250 = 10498 plus crank allowance ~1.0m; verify against fabricator setting-out"
+  },
+  {
+   "mark": "B2",
+   "text": "Length = grid spacing 4-5 (4915)"
+  },
+  {
+   "mark": "B3",
+   "text": "Length = grid spacing D-E (5530)"
+  },
+  {
+   "mark": "B4",
+   "text": "Short segment between 37kg and 23kg runs; length not dimensioned - estimated"
+  },
+  {
+   "mark": "B5",
+   "text": "Grid 5-6 (4873) + raking crank to eaves (~2.0m developed); roof pitch not stated - verify"
+  },
+  {
+   "mark": "P1",
+   "text": "POST HEIGHT NOT STATED ON DRAWINGS - 2.0m placeholder; confirm with engineer"
+  }
+ ],
+ "checks": [
+  {
+   "mark": "B1",
+   "modelled_mm": 21632.0,
+   "schedule_mm": 23000.0,
+   "deviation_pct": 5.9
+  },
+  {
+   "mark": "B2",
+   "modelled_mm": 9830.0,
+   "schedule_mm": 9830.0,
+   "deviation_pct": 0.0
+  },
+  {
+   "mark": "B3",
+   "modelled_mm": 11060.0,
+   "schedule_mm": 11060.0,
+   "deviation_pct": 0.0
+  },
+  {
+   "mark": "B4",
+   "modelled_mm": 3000.0,
+   "schedule_mm": 3000.0,
+   "deviation_pct": 0.0
+  },
+  {
+   "mark": "B5",
+   "modelled_mm": 13358.0,
+   "schedule_mm": 13800.0,
+   "deviation_pct": 3.2
+  },
+  {
+   "mark": "P1",
+   "modelled_mm": 4000.0,
+   "schedule_mm": 4000.0,
+   "deviation_pct": 0.0
+  }
+ ],
+ "grids": {
+  "x_grids": {
+   "1": 0,
+   "2": 3150,
+   "3": 8248,
+   "4": 10498,
+   "5": 15413,
+   "6": 20286,
+   "7": 21636
+  },
+  "y_grids": {
+   "A": 0,
+   "B": 1350,
+   "C": 2137,
+   "D": 3487,
+   "E": 9017,
+   "F": 14547,
+   "G": 15897,
+   "H": 16685,
+   "J": 18035
+  },
+  "source": "Grid dimensions read from drg 14017/05 (1:50). X = grids 1-7, Y = grids A-J."
+ },
+ "model": {
+  "members": [
+   {
+    "mark": "B1",
+    "section": "203x203x46 UKC",
+    "depth_mm": 203.0,
+    "width_mm": 203.0,
+    "kg_m": 46.1,
+    "segments": [
+     {
+      "from": [
+       0.0,
+       3487.0,
+       0.0
+      ],
+      "to": [
+       3150.0,
+       3487.0,
+       1200.0
+      ],
+      "length_mm": 3370.8
+     },
+     {
+      "from": [
+       3150.0,
+       3487.0,
+       1200.0
+      ],
+      "to": [
+       10498.0,
+       3487.0,
+       0.0
+      ],
+      "length_mm": 7445.3
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "B1",
+    "section": "203x203x46 UKC",
+    "depth_mm": 203.0,
+    "width_mm": 203.0,
+    "kg_m": 46.1,
+    "segments": [
+     {
+      "from": [
+       0.0,
+       14547.0,
+       0.0
+      ],
+      "to": [
+       3150.0,
+       14547.0,
+       1200.0
+      ],
+      "length_mm": 3370.8
+     },
+     {
+      "from": [
+       3150.0,
+       14547.0,
+       1200.0
+      ],
+      "to": [
+       10498.0,
+       14547.0,
+       0.0
+      ],
+      "length_mm": 7445.3
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "B2",
+    "section": "152x152x37 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 37.0,
+    "segments": [
+     {
+      "from": [
+       10498.0,
+       3487.0,
+       0.0
+      ],
+      "to": [
+       15413.0,
+       3487.0,
+       0.0
+      ],
+      "length_mm": 4915.0
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "B2",
+    "section": "152x152x37 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 37.0,
+    "segments": [
+     {
+      "from": [
+       10498.0,
+       14547.0,
+       0.0
+      ],
+      "to": [
+       15413.0,
+       14547.0,
+       0.0
+      ],
+      "length_mm": 4915.0
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "B3",
+    "section": "152x152x30 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 30.0,
+    "segments": [
+     {
+      "from": [
+       3150.0,
+       3487.0,
+       0.0
+      ],
+      "to": [
+       3150.0,
+       9017.0,
+       0.0
+      ],
+      "length_mm": 5530.0
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "B3",
+    "section": "152x152x30 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 30.0,
+    "segments": [
+     {
+      "from": [
+       15413.0,
+       3487.0,
+       0.0
+      ],
+      "to": [
+       15413.0,
+       9017.0,
+       0.0
+      ],
+      "length_mm": 5530.0
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "B4",
+    "section": "152x152x30 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 30.0,
+    "segments": [
+     {
+      "from": [
+       15413.0,
+       3487.0,
+       0.0
+      ],
+      "to": [
+       16913.0,
+       3487.0,
+       0.0
+      ],
+      "length_mm": 1500.0
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "B4",
+    "section": "152x152x30 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 30.0,
+    "segments": [
+     {
+      "from": [
+       15413.0,
+       14547.0,
+       0.0
+      ],
+      "to": [
+       16913.0,
+       14547.0,
+       0.0
+      ],
+      "length_mm": 1500.0
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "B5",
+    "section": "152x152x23 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 23.0,
+    "segments": [
+     {
+      "from": [
+       15413.0,
+       3487.0,
+       0.0
+      ],
+      "to": [
+       20286.0,
+       3487.0,
+       0.0
+      ],
+      "length_mm": 4873.0
+     },
+     {
+      "from": [
+       20286.0,
+       3487.0,
+       0.0
+      ],
+      "to": [
+       21636.0,
+       3487.0,
+       -1200.0
+      ],
+      "length_mm": 1806.2
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "B5",
+    "section": "152x152x23 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 23.0,
+    "segments": [
+     {
+      "from": [
+       15413.0,
+       14547.0,
+       0.0
+      ],
+      "to": [
+       20286.0,
+       14547.0,
+       0.0
+      ],
+      "length_mm": 4873.0
+     },
+     {
+      "from": [
+       20286.0,
+       14547.0,
+       0.0
+      ],
+      "to": [
+       21636.0,
+       14547.0,
+       -1200.0
+      ],
+      "length_mm": 1806.2
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "P1",
+    "section": "200x100x6.3 RHS",
+    "depth_mm": 200.0,
+    "width_mm": 100.0,
+    "kg_m": 27.9,
+    "segments": [
+     {
+      "from": [
+       3150.0,
+       9017.0,
+       0.0
+      ],
+      "to": [
+       3150.0,
+       9017.0,
+       -2000.0
+      ],
+      "length_mm": 2000.0
+     }
+    ],
+    "status": "MISSING"
+   },
+   {
+    "mark": "P1",
+    "section": "200x100x6.3 RHS",
+    "depth_mm": 200.0,
+    "width_mm": 100.0,
+    "kg_m": 27.9,
+    "segments": [
+     {
+      "from": [
+       15413.0,
+       9017.0,
+       0.0
+      ],
+      "to": [
+       15413.0,
+       9017.0,
+       -2000.0
+      ],
+      "length_mm": 2000.0
+     }
+    ],
+    "status": "MISSING"
+   }
+  ]
+ }
+}
