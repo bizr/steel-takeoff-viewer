@@ -13,7 +13,7 @@ const PAGE_COPY = {
 // ?job=<id> loads output/<id>/; no job = the original output/ (14017)
 const JOB = new URLSearchParams(location.search).get('job');
 const BASE = JOB ? `data/output/${encodeURIComponent(JOB)}/` : 'data/output/';
-const state = { data: null, dwg: null, selected: null, mode: 'model', display: 'material', filter: 'all', sheetBuilt: false, sheetViewHeight: 1000 };
+const state = { data: null, dwg: null, selected: null, mode: 'model', display: 'material', filter: 'all', sheetBuilt: false, sheetViewHeight: 1000, visibleFraction: [1, 1] };
 const meshesByMark = new Map();
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -55,6 +55,10 @@ sheetControls.dampingFactor = 0.1;
 sheetControls.minZoom = 0.2;
 sheetControls.maxZoom = 30;
 controls.zoomToCursor = sheetControls.zoomToCursor = true;   // CAD-style: zoom where the pointer is
+sheetControls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };   // 2D: one finger pans the sheet
+// phones and portrait tablets: bottom tab bar, side panels open over the view
+const COMPACT = matchMedia('(max-width: 820px)');
+const TOUCH = matchMedia('(pointer: coarse)').matches;
 
 // Trackpads: OrbitControls scales each wheel step by |deltaY| / (100 * dpr), so a
 // Retina pinch (ctrl+wheel, deltaY ~1-10) barely moves. Set the speed per event,
@@ -63,11 +67,16 @@ viewport.addEventListener('wheel', event => {
   controls.zoomSpeed = sheetControls.zoomSpeed = event.ctrlKey ? 12 : 3;
 }, { capture: true, passive: true });
 
-// Safari sends trackpad pinch as gesture events, not ctrl+wheel.
+// Safari sends trackpad pinch as gesture events, not ctrl+wheel. iOS also sends
+// them for touch pinches, which OrbitControls already handles: skip those.
 let gestureScale = 1;
+const touches = new Set();
+viewport.addEventListener('pointerdown', event => { if (event.pointerType === 'touch') touches.add(event.pointerId); }, { capture: true });
+['pointerup', 'pointercancel'].forEach(type => viewport.addEventListener(type, event => touches.delete(event.pointerId), { capture: true }));
 viewport.addEventListener('gesturestart', event => { event.preventDefault(); gestureScale = 1; });
 viewport.addEventListener('gesturechange', event => {
   event.preventDefault();
+  if (touches.size) return;
   const factor = gestureScale / event.scale;          // <1 = zoom in
   gestureScale = event.scale;
   if (state.mode === 'model') {
@@ -121,8 +130,31 @@ function resize() {
   sheetCamera.top = halfH;
   sheetCamera.bottom = -halfH;
   sheetCamera.updateProjectionMatrix();
+  updateViewOffset(width, height);
 }
 new ResizeObserver(resize).observe(viewport);
+
+// On small screens the side panels cover part of the view: shift the 3D
+// projection so the camera target sits in the middle of what is still visible.
+function updateViewOffset(width = viewport.clientWidth, height = viewport.clientHeight) {
+  const rail = $('#utility-rail').getBoundingClientRect();
+  let dx = 0, dy = 0;
+  if (COMPACT.matches && rail.width && rail.height && document.body.dataset.page === 'model') {
+    if (rail.width > width * 0.7) dy = (height - rail.top) / 2;      // bottom sheet
+    else dx = (width - rail.left) / 2;                               // side panel
+  }
+  state.visibleFraction = [1 - 2 * dx / width, 1 - 2 * dy / height];
+  if (dx || dy) modelCamera.setViewOffset(width, height, dx, dy, width, height);
+  else modelCamera.clearViewOffset();
+  modelCamera.updateProjectionMatrix();
+}
+new ResizeObserver(() => updateViewOffset()).observe($('#utility-rail'));
+
+function setUtilitiesCollapsed(collapsed) {
+  document.body.classList.toggle('utilities-collapsed', collapsed);
+  $('#show-utilities').hidden = !collapsed;
+  updateViewOffset();
+}
 
 async function fetchJSON(url) {
   const response = await fetch(url);
@@ -545,16 +577,20 @@ function setCamera(name) {
     right: new THREE.Vector3(1, 0.12, 0).normalize(),
   };
   const direction = name === 'fit' ? modelCamera.position.clone().sub(controls.target).normalize() : directions[name];
-  const verticalFov = THREE.MathUtils.degToRad(modelCamera.fov);
-  const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * modelCamera.aspect);
-  const fitFov = Math.min(verticalFov, horizontalFov);
   const fitMargin = modelCamera.aspect < 1 ? 1.02 : 0.82;
-  const distance = state.modelRadius / Math.sin(fitFov / 2) * fitMargin;
+  const distance = state.modelRadius / Math.sin(fitFov() / 2) * fitMargin;
   controls.target.copy(state.modelCenter);
   modelCamera.position.copy(state.modelCenter).addScaledVector(direction, distance);
   modelCamera.up.set(0, 1, 0);
   controls.update();
   $$('[data-cam]').forEach(button => button.classList.toggle('active', button.dataset.cam === name));
+}
+
+// Narrowest field of view over the part of the canvas no panel covers.
+function fitFov() {
+  const [fx, fy] = state.visibleFraction;
+  const tanHalf = Math.tan(THREE.MathUtils.degToRad(modelCamera.fov) / 2);
+  return 2 * Math.atan(tanHalf * Math.min(fy, modelCamera.aspect * fx));
 }
 
 function focusMember(mark) {
@@ -564,7 +600,7 @@ function focusMember(mark) {
   const center = bounds.getCenter(new THREE.Vector3());
   const size = bounds.getSize(new THREE.Vector3());
   const direction = modelCamera.position.clone().sub(controls.target).normalize();
-  const distance = Math.max(size.length() * 1.25 + 0.8, 2.5);
+  const distance = Math.max(size.length() / 2 / Math.sin(fitFov() / 2) * 1.1, 2.5);
   animateCamera(center, center.clone().addScaledVector(direction, distance));
 }
 
@@ -583,6 +619,7 @@ function showPage(name) {
   $$('.nav-item').forEach(button => button.classList.toggle('active', button.dataset.page === name));
   $$('.page').forEach(page => page.classList.toggle('active', page.id === `page-${name}`));
   $('#page-crumb').textContent = PAGE_COPY[name][3];
+  if (COMPACT.matches && name !== 'model') setUtilitiesCollapsed(true);
   requestAnimationFrame(resize);
 }
 
@@ -646,8 +683,7 @@ function selectMember(mark, focus = true) {
   renderMemberList();
   if (mark) {
     showPage('model');
-    document.body.classList.remove('utilities-collapsed');
-    $('#show-utilities').hidden = true;
+    setUtilitiesCollapsed(false);
     $('#inspector').classList.remove('collapsed');
     $('#collapse-inspector').textContent = '−';
     fillMemberDetail(mark);
@@ -664,8 +700,14 @@ function selectMember(mark, focus = true) {
   }
 }
 
+function viewportHelp(isModel) {
+  if (TOUCH) return isModel ? 'Drag to orbit <i>·</i> Pinch to zoom <i>·</i> Two fingers to pan <i>·</i> Tap a member' : 'Drag to pan <i>·</i> Pinch to zoom';
+  return isModel ? 'Drag to orbit <i>·</i> Scroll to zoom <i>·</i> Click a member' : 'Drag to pan <i>·</i> Scroll to zoom <i>·</i> Use fit to reset';
+}
+
 function setViewMode(mode) {
   state.mode = mode;
+  document.body.dataset.mode = mode;
   $$('[data-view-mode]').forEach(button => button.classList.toggle('active', button.dataset.viewMode === mode));
   const isModel = mode === 'model';
   controls.enabled = isModel;
@@ -678,7 +720,7 @@ function setViewMode(mode) {
   $('#model-meta').textContent = isModel ? `${state.data?.model.members.length ?? 0} assemblies · ${segmentCount} segments` : (state.data?.project?.drawing_title ?? 'Proposed roof plan');
   $('#scene-label').textContent = isModel ? '3D MODEL' : '2D DRAWING';
   $('#scene-units').textContent = isModel ? 'METRES' : (state.data?.project?.drawing_ref ?? '14017/05 REV B');
-  $('#viewport-help').innerHTML = isModel ? 'Drag to orbit <i>·</i> Scroll to zoom <i>·</i> Click a member' : 'Drag to pan <i>·</i> Scroll to zoom <i>·</i> Use fit to reset';
+  $('#viewport-help').innerHTML = viewportHelp(isModel);
   if (!isModel && state.dwg) buildSheet(state.dwg);
   resize();
 }
@@ -807,10 +849,6 @@ function bindUI() {
     document.body.classList.toggle('nav-collapsed', collapsed);
     $('#show-nav').hidden = !collapsed;
   };
-  const setUtilitiesCollapsed = collapsed => {
-    document.body.classList.toggle('utilities-collapsed', collapsed);
-    $('#show-utilities').hidden = !collapsed;
-  };
   const bindCollapse = (buttonSelector, panelSelector) => {
     const button = $(buttonSelector);
     const panel = $(panelSelector);
@@ -835,7 +873,9 @@ function bindUI() {
     button.textContent = collapsed ? '+' : '−';
     button.setAttribute('aria-expanded', String(!collapsed));
   });
-  if (innerWidth <= 820) setUtilitiesCollapsed(true);
+  if (COMPACT.matches) setUtilitiesCollapsed(true);
+  if (TOUCH) $('#viewport-help').innerHTML = viewportHelp(true);
+  COMPACT.addEventListener('change', event => { if (event.matches) setUtilitiesCollapsed(true); resize(); });
   $$('.nav-item').forEach(button => button.onclick = () => showPage(button.dataset.page));
   $$('[data-go]').forEach(element => {
     element.addEventListener('click', () => showPage(element.dataset.go));
@@ -883,6 +923,7 @@ renderer.domElement.addEventListener('pointerup', event => {
   raycaster.setFromCamera(pointer, modelCamera);
   const hit = raycaster.intersectObjects(g3d.children, false)[0];
   selectMember(hit?.object.userData.mark ?? null);
+  if (!hit && COMPACT.matches) setUtilitiesCollapsed(true);   // tap empty space closes the panel
 });
 
 // --- keyboard shortcuts -----------------------------------------------------------
@@ -897,6 +938,7 @@ const IS_MAC = /Mac|iPhone|iPad|iPod/.test(navigator.userAgentData?.platform ?? 
 const lastPointer = { x: null, y: null };
 renderer.domElement.addEventListener('pointermove', event => { lastPointer.x = event.clientX; lastPointer.y = event.clientY; });
 controls.addEventListener('start', pushView);
+[controls, sheetControls].forEach(item => item.addEventListener('start', () => $('#viewport-help').classList.add('done')));   // hint fades after first use
 sheetControls.addEventListener('start', pushView);
 
 function toast(text) {
@@ -1062,8 +1104,7 @@ function cycleReview(step) {
 function focusSearch() {
   showPage('model');
   if (state.selected) selectMember(null, false);
-  document.body.classList.remove('utilities-collapsed');
-  $('#show-utilities').hidden = true;
+  setUtilitiesCollapsed(false);
   $('#member-search').focus();
   $('#member-search').select();
 }

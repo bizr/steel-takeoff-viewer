@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#17211f">
 <title>Steel Takeoff — Bourne Hill Close</title>
 <link rel="stylesheet" href="style.css">
@@ -16,7 +16,7 @@
       <div class="loading" id="loading"><span class="spinner"></span><strong>Building workspace</strong><small>Loading model and takeoff data…</small></div>
     </div>
     <div class="viewer-toolbar floating" id="viewer-toolbar">
-      <div class="segmented" aria-label="Viewer mode"><button class="active" data-view-mode="model">3D model</button><button data-view-mode="drawing">2D drawing</button></div>
+      <div class="segmented" aria-label="Viewer mode"><button class="active" data-view-mode="model">3D<span class="long"> model</span></button><button data-view-mode="drawing">2D<span class="long"> drawing</span></button></div>
       <div class="viewer-tools" id="model-tools">
         <div class="display-switch" aria-label="Member colouring"><button class="active" data-display="material" title="Real steel material">Steel</button><button data-display="status" title="Colour by review status">Status</button></div>
         <span class="tool-divider"></span>
@@ -41,11 +41,11 @@
     <div class="sidebar-head"><span class="nav-label">Workspace</span><button class="window-control dark" id="collapse-nav" title="Collapse navigation" aria-label="Collapse navigation">«</button></div>
     <section class="project-card"><span class="eyebrow">Active project</span><div class="project-job"><span id="project-job-no">14017</span> <span id="project-rev">REV B</span></div><h2 id="project-name">Bourne Hill Close</h2><p id="project-desc">Roof support steelwork<br>London N13 4LX</p></section>
     <nav class="primary-nav" aria-label="Project workspace">
-      <button class="nav-item active" data-page="model" title="3D workspace"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg><span>3D workspace</span></button>
-      <button class="nav-item" data-page="schedule" title="Member schedule"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Member schedule</span></button>
-      <button class="nav-item" data-page="procurement" title="Procurement"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM8 7V4h8v3M4 12h16"/></svg><span>Procurement</span></button>
-      <button class="nav-item" data-page="quote" title="Quote"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6"/></svg><span>Quote</span></button>
-      <button class="nav-item" data-page="qa" title="Quality review"><svg viewBox="0 0 24 24"><path d="M12 3 3.5 7v5c0 5 3.6 8.1 8.5 9 4.9-.9 8.5-4 8.5-9V7L12 3Z"/><path d="M12 8v5M12 16h.01"/></svg><span>Quality review</span><span class="nav-count" id="nav-qa-count">6</span></button>
+      <button class="nav-item active" data-page="model" data-short="3D" title="3D workspace"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg><span>3D workspace</span></button>
+      <button class="nav-item" data-page="schedule" data-short="Schedule" title="Member schedule"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Member schedule</span></button>
+      <button class="nav-item" data-page="procurement" data-short="Materials" title="Procurement"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM8 7V4h8v3M4 12h16"/></svg><span>Procurement</span></button>
+      <button class="nav-item" data-page="quote" data-short="Quote" title="Quote"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6"/></svg><span>Quote</span></button>
+      <button class="nav-item" data-page="qa" data-short="Review" title="Quality review"><svg viewBox="0 0 24 24"><path d="M12 3 3.5 7v5c0 5 3.6 8.1 8.5 9 4.9-.9 8.5-4 8.5-9V7L12 3Z"/><path d="M12 8v5M12 16h.01"/></svg><span>Quality review</span><span class="nav-count" id="nav-qa-count">6</span></button>
     </nav>
     <div class="sidebar-bottom"><div class="review-card"><strong><span id="review-count">6</span> items need review</strong><p>Resolve estimates and missing dimensions before ordering.</p><button data-go="qa">Open review <span>→</span></button></div><div class="local-note"><span></span> Local project data</div></div>
   </aside>
