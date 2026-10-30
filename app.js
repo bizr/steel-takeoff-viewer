@@ -105,6 +105,7 @@ function buildSheet(dwg) {
   paper.position.set(cx, cy, -1);
   g2d.add(paper);
   g2d.position.set(-cx, -cy, 0);
+  state.sheetCenter = { x: cx, y: -cy };  // pt-space centre (y down)
   state.sheetSpan = Math.max(maxx - minx, maxy - miny);
 
   for (const s of page.text.slice(0, 3000)) {
@@ -126,49 +127,66 @@ function buildSheet(dwg) {
 
 function buildModel(data) {
   g3d.clear(); gMark.clear(); gGrid.clear(); meshesByMark.clear();
+  const reg = data.registration, sc = reg ? reg.scale_pt_per_mm : 1;
+  const cc = state.sheetCenter || { x: 0, y: 0 };
+  // model mm -> viewer coords (aligned with the 2D sheet when registration exists)
+  const tf = reg ? (mx, my, mz) => [
+      (mx * reg.M[0][0] + my * reg.M[1][0] + reg.M[2][0]) - cc.x,
+      -(mx * reg.M[0][1] + my * reg.M[1][1] + reg.M[2][1] - cc.y),
+      mz * sc,
+    ] : (mx, my, mz) => [mx, -my, mz];
   const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
   for (const m of data.model.members) {
     const mat = new THREE.MeshStandardMaterial({
       color: STATUS_COLOR[m.status] ?? 0x8fb8ff, metalness: 0.35, roughness: 0.5 });
     for (const s of m.segments) {
-      const a = new THREE.Vector3(...s.from), b = new THREE.Vector3(...s.to);
-      const box = new THREE.Mesh(new THREE.BoxGeometry(a.distanceTo(b), m.depth_mm, m.width_mm), mat);
+      const lift = reg ? m.depth_mm / 2 : 0;
+      const a = new THREE.Vector3(...tf(s.from[0], s.from[1], s.from[2] + lift));
+      const b = new THREE.Vector3(...tf(s.to[0], s.to[1], s.to[2] + lift));
+      const box = new THREE.Mesh(new THREE.BoxGeometry(a.distanceTo(b), m.depth_mm * sc, m.width_mm * sc), mat);
       box.position.copy(a).add(b).multiplyScalar(0.5);
       box.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), b.clone().sub(a).normalize());
       box.userData.mark = m.mark;
       g3d.add(box);
       if (!meshesByMark.has(m.mark)) meshesByMark.set(m.mark, []);
       meshesByMark.get(m.mark).push(box);
-      const ring = new THREE.Mesh(new THREE.RingGeometry(220, 300, 32), ringMat);
-      ring.position.copy(box.position); ring.position.z += m.depth_mm;
+      const ring = new THREE.Mesh(new THREE.RingGeometry(220 * sc, 300 * sc, 32), ringMat);
+      ring.position.copy(box.position); ring.position.z += m.depth_mm * sc;
       gMark.add(ring);
       const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64;
       const ctx = cv.getContext('2d'); ctx.font = '600 52px system-ui'; ctx.fillStyle = '#fff';
       ctx.fillText(m.mark, 10, 46);
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true }));
-      sp.scale.set(900, 450, 1);
-      sp.position.copy(box.position); sp.position.z += 700;
+      sp.scale.set(900 * sc, 450 * sc, 1);
+      sp.position.copy(box.position); sp.position.z += 700 * sc;
       gMark.add(sp);
     }
   }
   const g = data.grids, pts = [], cols = [], gc = new THREE.Color(0x2a333f);
-  for (const x of Object.values(g.x_grids)) { pts.push(x, 0, 0, x, -22000, 0); cols.push(gc, gc); }
-  for (const y of Object.values(g.y_grids)) { pts.push(0, -y, 0, 22000, -y, 0); cols.push(gc, gc); }
+  for (const x of Object.values(g.x_grids)) { const p0 = tf(x, 0, 0), p1 = tf(x, 22000, 0); pts.push(...p0, ...p1); cols.push(gc, gc); }
+  for (const y of Object.values(g.y_grids)) { const p0 = tf(0, y, 0), p1 = tf(22000, y, 0); pts.push(...p0, ...p1); cols.push(gc, gc); }
   const flat = []; for (const c of cols) flat.push(c.r, c.g, c.b);
   const gg = new THREE.BufferGeometry();
   gg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
   gg.setAttribute('color', new THREE.Float32BufferAttribute(flat, 3));
   gGrid.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ vertexColors: true })));
+  if (reg) gGrid.position.z = 1;
 
-  const span = state.sheetSpan;
-  const box3 = new THREE.Box3().setFromObject(g3d);
-  const c3 = box3.getCenter(new THREE.Vector3());
-  const size3 = box3.getSize(new THREE.Vector3());
-  const k = span * 0.55 / Math.max(size3.x, size3.y, 1);
-  for (const grp of [g3d, gMark, gGrid]) {
-    grp.scale.setScalar(k);
-    grp.position.set(span * 0.62 - c3.x * k, -c3.y * k, -c3.z * k);
+  if (!reg) {
+    const span = state.sheetSpan;
+    const box3 = new THREE.Box3().setFromObject(g3d);
+    const c3 = box3.getCenter(new THREE.Vector3());
+    const size3 = box3.getSize(new THREE.Vector3());
+    const k = span * 0.55 / Math.max(size3.x, size3.y, 1);
+    for (const grp of [g3d, gMark, gGrid]) {
+      grp.scale.setScalar(k);
+      grp.position.set(span * 0.62 - c3.x * k, -c3.y * k, -c3.z * k);
+    }
   }
+  const mb = new THREE.Box3().setFromObject(g3d);
+  state.modelCenter = mb.getCenter(new THREE.Vector3());
+  const ms = mb.getSize(new THREE.Vector3());
+  state.modelSpan = Math.max(ms.x, ms.y, 1);
 }
 
 // ---------- selection ----------
@@ -219,14 +237,16 @@ renderer.domElement.addEventListener('pointerup', e => {
 
 // ---------- camera presets ----------
 const camViews = {
-  iso:   { pos: [0.35, -1.15, 0.78], tgt: [0.35, 0, 0.05] },
-  top:   { pos: [0.35, 0, 1.6],      tgt: [0.35, 0, 0] },
-  front: { pos: [0.35, -1.7, 0.15],  tgt: [0.35, 0, 0] },
+  iso:   { pos: [0.45, -1.0, 0.75], tgt: [0, 0, 0] },
+  top:   { pos: [0, 0, 1.45],       tgt: [0, 0, 0] },
+  front: { pos: [0, -1.7, 0.25],    tgt: [0, 0, 0] },
 };
 function setCam(name) {
-  const v = camViews[name], fit = state.sheetSpan;
-  camera.position.set(v.pos[0] * fit, v.pos[1] * fit, v.pos[2] * fit);
-  controls.target.set(v.tgt[0] * fit, v.tgt[1] * fit, v.tgt[2] * fit);
+  const v = camViews[name];
+  const fit = state.data?.registration ? state.modelSpan : state.sheetSpan;
+  const c = state.data?.registration && state.modelCenter ? state.modelCenter : new THREE.Vector3();
+  camera.position.set(c.x + v.pos[0] * fit, c.y + v.pos[1] * fit, c.z + v.pos[2] * fit);
+  controls.target.set(c.x + v.tgt[0] * fit, c.y + v.tgt[1] * fit, c.z + v.tgt[2] * fit);
   controls.update();
 }
 document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => setCam(b.dataset.cam));
