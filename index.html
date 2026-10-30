@@ -3,76 +3,90 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Steel Takeoff — 3-4 Bourne Hill Close</title>
+<meta name="theme-color" content="#17211f">
+<title>Steel Takeoff — Bourne Hill Close</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<header id="topbar">
-  <div class="brand">
-    <div class="brand-mark">ST</div>
-    <div>
-      <div class="brand-title">Steel Takeoff Viewer</div>
-      <div class="brand-sub" id="project-sub">—</div>
+<body data-page="model">
+<div class="os-shell">
+  <section class="viewer-panel" aria-label="Structural model canvas">
+    <div id="viewport">
+      <div class="viewport-badge"><span></span><strong id="scene-label">3D MODEL</strong><i>·</i><span id="scene-units">METRES</span></div>
+      <div class="viewport-help" id="viewport-help">Drag to orbit <i>·</i> Scroll to zoom <i>·</i> Click a member <i>·</i> F1 shortcuts</div>
+      <div class="loading" id="loading"><span class="spinner"></span><strong>Building workspace</strong><small>Loading model and takeoff data…</small></div>
     </div>
-  </div>
-  <div class="topbar-right">
-    <span class="chip chip-dim" id="chip-drawings"></span>
-    <span class="chip chip-warn">AI-assisted · verify before order</span>
-  </div>
-</header>
-
-<section id="kpis">
-  <div class="kpi"><div class="kpi-label">Net steel</div><div class="kpi-value" id="kpi-net">—</div><div class="kpi-unit">tonnes</div></div>
-  <div class="kpi"><div class="kpi-label">Order quantity</div><div class="kpi-value" id="kpi-order">—</div><div class="kpi-unit">incl. waste allowance</div></div>
-  <div class="kpi"><div class="kpi-label">Quote</div><div class="kpi-value" id="kpi-quote">—</div><div class="kpi-unit" id="kpi-quote-sub">incl. OH&amp;P</div></div>
-  <div class="kpi"><div class="kpi-label">Member marks</div><div class="kpi-value" id="kpi-marks">—</div><div class="kpi-unit">B1–B5, P1 + fittings</div></div>
-  <div class="kpi kpi-warn"><div class="kpi-label">To verify</div><div class="kpi-value" id="kpi-verify">—</div><div class="kpi-unit">estimated / missing</div></div>
-</section>
-
-<main id="main">
-  <section id="viewport-wrap">
-    <div id="viewport-bar">
-      <div class="tb-group">
-        <span class="tb-label">Layers</span>
-        <button class="tb-btn active" data-layer="sheet">2D sheet</button>
-        <button class="tb-btn active" data-layer="model">3D model</button>
-        <button class="tb-btn active" data-layer="marks">Markings</button>
-        <button class="tb-btn" data-layer="text">Text</button>
-        <button class="tb-btn active" data-layer="grid">Grid</button>
-        <button class="tb-btn active" data-layer="conn">Connections</button>
+    <div class="viewer-toolbar floating" id="viewer-toolbar">
+      <div class="segmented" aria-label="Viewer mode"><button class="active" data-view-mode="model">3D model</button><button data-view-mode="drawing">2D drawing</button></div>
+      <div class="viewer-tools" id="model-tools">
+        <div class="display-switch" aria-label="Member colouring"><button class="active" data-display="material" title="Real steel material">Steel</button><button data-display="status" title="Colour by review status">Status</button></div>
+        <span class="tool-divider"></span>
+        <button class="icon-button active" data-layer="labels" title="Toggle member labels" aria-label="Toggle member labels"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5Z"/><path d="M8 9h8M8 12h5"/></svg></button>
+        <button class="icon-button active" data-layer="connections" title="Toggle connections" aria-label="Toggle connections"><svg viewBox="0 0 24 24"><path d="M8 3h8v4H8zM8 17h8v4H8zM3 8h4v8H3zM17 8h4v8h-4zM7 12h10"/></svg></button>
+        <button class="icon-button active" data-layer="grid" title="Toggle ground grid" aria-label="Toggle ground grid"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 9h16M4 15h16M9 4v16M15 4v16"/></svg></button>
       </div>
-      <div class="tb-group">
-        <span class="tb-label">Camera</span>
-        <button class="tb-btn" data-cam="iso">Iso</button>
-        <button class="tb-btn" data-cam="top">Top</button>
-        <button class="tb-btn" data-cam="front">Front</button>
-      </div>
-      <div class="tb-spacer"></div>
-      <span id="sel-info" class="sel-info">click a member or table row</span>
+      <div class="viewer-tools" id="drawing-tools" hidden><button class="icon-button active" data-layer="text" title="Toggle drawing text" aria-label="Toggle drawing text"><svg viewBox="0 0 24 24"><path d="M5 5h14M12 5v14M8 19h8"/></svg></button><button class="icon-button" id="fit-drawing" title="Fit drawing" aria-label="Fit drawing"><svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg></button></div>
+      <button class="window-control" id="collapse-viewer-tools" title="Collapse view tools" aria-label="Collapse view tools">−</button>
     </div>
-    <div id="viewport"></div>
-    <div id="member-card" class="hidden"></div>
+    <div class="viewer-subbar floating" id="viewer-subbar"><span class="window-title">View</span><div class="camera-presets" id="camera-presets"><button class="active" data-cam="iso">Isometric</button><button data-cam="top">Top</button><button data-cam="front">Front</button><button data-cam="right">Right</button><button class="fit-button" data-cam="fit">Fit <kbd>F</kbd></button></div><span class="model-meta" id="model-meta">—</span><button class="window-control" id="collapse-camera" title="Collapse camera controls" aria-label="Collapse camera controls">−</button></div>
+    <div class="viewer-status floating"><div class="legend"><span><i class="legend-dot confirmed"></i>Confirmed</span><span><i class="legend-dot measured"></i>Measured</span><span><i class="legend-dot estimated"></i>Estimated</span><span><i class="legend-dot missing"></i>Missing</span></div><span class="selection-info" id="sel-info">Select a member to inspect</span></div>
   </section>
 
-  <aside id="panel">
-    <nav id="tabs">
-      <button class="tab active" data-tab="schedule">Schedule</button>
-      <button class="tab" data-tab="quote">Quote</button>
-      <button class="tab" data-tab="procurement">Procurement</button>
-      <button class="tab" data-tab="qa">QA</button>
+  <header class="topbar floating">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 5h18v5H7zm3 7h12v8H10zm-3 10h18v5H7z"/></svg></span><span><strong>Steel Takeoff</strong><small>Fabrication OS</small></span></div>
+    <div class="top-project"><span class="eyebrow" id="top-job">JOB 14017 · REV B</span><strong id="page-crumb">3D workspace</strong></div>
+    <div class="top-actions"><span class="saved-state"><i></i> All data loaded</span><button class="button button-secondary icon-text" id="show-shortcuts" title="Keyboard shortcuts (F1)"><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg><span>Shortcuts</span></button><button class="button button-secondary" id="export-data"><svg viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M5 17v4h14v-4"/></svg><span>Export</span></button></div>
+  </header>
+
+  <aside class="sidebar floating" id="sidebar">
+    <div class="sidebar-head"><span class="nav-label">Workspace</span><button class="window-control dark" id="collapse-nav" title="Collapse navigation" aria-label="Collapse navigation">«</button></div>
+    <section class="project-card"><span class="eyebrow">Active project</span><div class="project-job"><span id="project-job-no">14017</span> <span id="project-rev">REV B</span></div><h2 id="project-name">Bourne Hill Close</h2><p id="project-desc">Roof support steelwork<br>London N13 4LX</p></section>
+    <nav class="primary-nav" aria-label="Project workspace">
+      <button class="nav-item active" data-page="model" title="3D workspace"><svg viewBox="0 0 24 24"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg><span>3D workspace</span></button>
+      <button class="nav-item" data-page="schedule" title="Member schedule"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Member schedule</span></button>
+      <button class="nav-item" data-page="procurement" title="Procurement"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM8 7V4h8v3M4 12h16"/></svg><span>Procurement</span></button>
+      <button class="nav-item" data-page="quote" title="Quote"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6"/></svg><span>Quote</span></button>
+      <button class="nav-item" data-page="qa" title="Quality review"><svg viewBox="0 0 24 24"><path d="M12 3 3.5 7v5c0 5 3.6 8.1 8.5 9 4.9-.9 8.5-4 8.5-9V7L12 3Z"/><path d="M12 8v5M12 16h.01"/></svg><span>Quality review</span><span class="nav-count" id="nav-qa-count">6</span></button>
     </nav>
-    <div id="tab-schedule" class="tabpage active"></div>
-    <div id="tab-quote" class="tabpage"></div>
-    <div id="tab-procurement" class="tabpage"></div>
-    <div id="tab-qa" class="tabpage"></div>
+    <div class="sidebar-bottom"><div class="review-card"><strong><span id="review-count">6</span> items need review</strong><p>Resolve estimates and missing dimensions before ordering.</p><button data-go="qa">Open review <span>→</span></button></div><div class="local-note"><span></span> Local project data</div></div>
   </aside>
-</main>
+  <button class="restore-button floating" id="show-nav" title="Show navigation" aria-label="Show navigation" hidden><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
 
-<footer id="footer">
-  <span id="foot-src"></span>
-  <span id="foot-gen"></span>
-</footer>
+  <div class="utility-rail" id="utility-rail">
+    <section class="kpi-panel floating" id="kpi-panel">
+      <div class="floating-heading"><span>PROJECT OVERVIEW</span><div><button class="window-control" id="collapse-kpis" title="Collapse project overview" aria-label="Collapse project overview">−</button><button class="window-control" id="collapse-utilities" title="Collapse side panels" aria-label="Collapse side panels">›</button></div></div>
+      <section class="kpi-grid" aria-label="Project summary">
+        <article class="kpi-card"><div class="kpi-top"><span>Net steel</span><span class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v4H4zm3 6h10v3H7zm-3 5h16v4H4z"/></svg></span></div><div class="kpi-value" id="kpi-net">—</div><div class="kpi-note">Members + plates</div></article>
+        <article class="kpi-card"><div class="kpi-top"><span>Order quantity</span><span class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM8 7V4h8v3M4 12h16"/></svg></span></div><div class="kpi-value" id="kpi-order">—</div><div class="kpi-note" id="kpi-waste">Including waste</div></article>
+        <article class="kpi-card"><div class="kpi-top"><span>Estimated quote</span><span class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6"/></svg></span></div><div class="kpi-value" id="kpi-quote">—</div><div class="kpi-note">Including OH&amp;P</div></article>
+        <article class="kpi-card kpi-review" data-go="qa" tabindex="0" role="button"><div class="kpi-top"><span>Review status</span><span class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M12 4 2.8 20h18.4L12 4Z"/><path d="M12 9v5M12 17h.01"/></svg></span></div><div class="kpi-value"><span id="kpi-verify">—</span><small>items</small></div><div class="kpi-note">Open items <span>→</span></div></article>
+      </section>
+    </section>
 
+    <aside class="inspector floating" id="inspector">
+      <div class="floating-heading"><span>MEMBER INSPECTOR</span><button class="window-control" id="collapse-inspector" title="Collapse member inspector" aria-label="Collapse member inspector">−</button></div>
+      <div id="inspector-list" class="inspector-view">
+        <div class="inspector-heading"><div><span class="eyebrow">TAKEOFF</span><h2>Member schedule</h2></div><span class="count-badge" id="member-count">6</span></div>
+        <label class="search-box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input id="member-search" type="search" placeholder="Search mark or section" autocomplete="off"></label>
+        <div class="filter-row"><button class="active" data-filter="all">All members</button><button data-filter="review">Needs review</button></div>
+        <div class="member-list" id="member-list"></div>
+        <div class="inspector-footer"><span>Total member mass</span><strong id="member-mass">—</strong></div>
+      </div>
+      <div id="inspector-detail" class="inspector-view" hidden></div>
+    </aside>
+  </div>
+  <button class="restore-button floating right" id="show-utilities" title="Show side panels" aria-label="Show side panels" hidden><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM14 4v16"/></svg></button>
+
+  <main class="content"><div class="pages">
+    <section class="page active" id="page-model"></section>
+    <section class="page" id="page-schedule"><div class="data-panel floating"><div class="panel-heading"><div><span class="eyebrow">BILL OF MATERIALS</span><h2>Member &amp; plate schedule</h2><p>Select a member row to locate it in the 3D workspace.</p></div><div class="window-actions"><span class="panel-badge" id="schedule-count">—</span><button class="window-control" data-collapse-window title="Collapse window" aria-label="Collapse window">−</button></div></div><div class="table-scroll" id="schedule-table"></div></div></section>
+    <section class="page" id="page-procurement"><div class="data-panel floating"><div class="panel-heading"><div><span class="eyebrow">MATERIAL PLANNING</span><h2>Procurement &amp; cutting list</h2><p id="stock-note">Stock optimisation using available 13 m bars and the configured waste allowance.</p></div><div class="window-actions"><span class="panel-badge" id="stock-count">—</span><button class="window-control" data-collapse-window title="Collapse window" aria-label="Collapse window">−</button></div></div><div class="procurement-content" id="procurement-content"></div></div></section>
+    <section class="page" id="page-quote"><div id="quote-content" class="quote-layout"></div></section>
+    <section class="page" id="page-qa"><div class="data-panel floating"><div class="panel-heading"><div><span class="eyebrow">QUALITY ASSURANCE</span><h2>Review before fabrication</h2><p>Resolve source-data gaps and compare modelled lengths against the schedule.</p></div><div class="window-actions"><span class="panel-badge warning" id="qa-count">—</span><button class="window-control" data-collapse-window title="Collapse window" aria-label="Collapse window">−</button></div></div><div class="qa-content" id="qa-content"></div></div></section>
+  </div></main>
+
+  <footer class="content-footer floating"><span><svg viewBox="0 0 24 24"><path d="M12 4 2.8 20h18.4L12 4Z"/><path d="M12 9v5M12 17h.01"/></svg>Verify quantities before ordering.</span><span id="generated-date">—</span></footer>
+</div>
+<div class="shortcut-help" id="shortcut-help" hidden><div class="shortcut-panel floating" role="dialog" aria-label="Keyboard shortcuts"><div class="panel-heading"><div><span class="eyebrow">KEYBOARD</span><h2>Shortcuts</h2><p class="shortcut-platform"></p></div><button class="window-control" data-close-help title="Close (Esc)" aria-label="Close">×</button></div><div class="shortcut-groups"></div></div></div>
 <script type="importmap">{"imports":{"three":"./lib/three.module.js"}}</script>
 <script type="module" src="app.js"></script>
 </body>

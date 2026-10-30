@@ -1,533 +1,1249 @@
 import * as THREE from 'three';
 import { OrbitControls } from './lib/OrbitControls.js';
 
-const STATUS_COLOR = { CONFIRMED: 0x3fb950, ESTIMATED: 0xd29922, MISSING: 0xf85149 };
-const MARK_PALETTE = ['#5b9bd5','#3fb950','#d29922','#b678e0','#e06c75','#56b6c2','#c8a24a','#7f8ea3'];
-
-const state = { data: null, dwg: null, selected: null, sheetSpan: 1600 };
+const STATUS_COLOR = { CONFIRMED: '#2d8066', MEASURED: '#3f6fb5', ESTIMATED: '#d59a3e', MISSING: '#b84d46' };
+const MARK_PALETTE = ['#547f78', '#cf7351', '#6f88a4', '#9a7a9e', '#b38a45', '#62766f', '#9c665f', '#77965d'];
+const PAGE_COPY = {
+  model: ['MODEL & VERIFY', 'Roof support steelwork', 'Explore the frame, inspect members and verify the takeoff.', '3D workspace'],
+  schedule: ['TAKEOFF', 'Member schedule', 'A traceable bill of materials for every member, plate and fitting.', 'Member schedule'],
+  procurement: ['MATERIAL PLANNING', 'Procurement', 'Review stock requirements, cutting efficiency and fasteners.', 'Procurement'],
+  quote: ['COMMERCIAL', 'Project quote', 'A transparent cost build-up for fabrication and erection.', 'Quote'],
+  qa: ['QUALITY ASSURANCE', 'Quality review', 'Resolve assumptions and cross-check the model against the takeoff.', 'Quality review'],
+};
+// ?job=<id> loads output/<id>/; no job = the original output/ (14017)
+const JOB = new URLSearchParams(location.search).get('job');
+const BASE = JOB ? `data/output/${encodeURIComponent(JOB)}/` : 'data/output/';
+const state = { data: null, dwg: null, selected: null, mode: 'model', display: 'material', filter: 'all', sheetBuilt: false, sheetViewHeight: 1000 };
 const meshesByMark = new Map();
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
+const fmt = (n, digits = 2) => Number(n).toLocaleString('en-GB', { maximumFractionDigits: digits });
+const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
-// ---------- scene ----------
-const viewport = document.getElementById('viewport');
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0e1116);
-const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 5e6);
+const viewport = $('#viewport');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-viewport.appendChild(renderer.domElement);
-const controls = new OrbitControls(camera, renderer.domElement);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+viewport.prepend(renderer.domElement);
+renderer.domElement.setAttribute('aria-label', 'Interactive structural steel model');
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.85));
-const sun = new THREE.DirectionalLight(0xffffff, 0.9);
-sun.position.set(1.5, -1, 2.5);
-scene.add(sun);
+const modelScene = new THREE.Scene();
+modelScene.background = new THREE.Color('#e8ece9');
+const sheetScene = new THREE.Scene();
+sheetScene.background = new THREE.Color('#d9dfdb');
+const modelCamera = new THREE.PerspectiveCamera(42, 1, 0.01, 500);
+modelCamera.position.set(14, 12, 18);
+const sheetCamera = new THREE.OrthographicCamera(-500, 500, 500, -500, 0.1, 5000);
+sheetCamera.position.set(0, 0, 1000);
 
-const g2d = new THREE.Group(), g3d = new THREE.Group(), gMark = new THREE.Group(),
-      gText = new THREE.Group(), gGrid = new THREE.Group(), gConn = new THREE.Group();
-scene.add(g2d, g3d, gMark, gText, gGrid, gConn);
+const controls = new OrbitControls(modelCamera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 0.5;
+controls.maxDistance = 180;
+controls.target.set(0, 0, 0);
+const sheetControls = new OrbitControls(sheetCamera, renderer.domElement);
+sheetControls.enabled = false;
+sheetControls.enableRotate = false;
+sheetControls.screenSpacePanning = true;
+sheetControls.enableDamping = true;
+sheetControls.dampingFactor = 0.1;
+sheetControls.minZoom = 0.2;
+sheetControls.maxZoom = 30;
+controls.zoomToCursor = sheetControls.zoomToCursor = true;   // CAD-style: zoom where the pointer is
 
-const LAYERS = { sheet: [g2d], model: [g3d], marks: [gMark], text: [gText], grid: [gGrid], conn: [gConn] };
-document.querySelectorAll('[data-layer]').forEach(btn => {
-  btn.onclick = () => {
-    btn.classList.toggle('active');
-    for (const g of LAYERS[btn.dataset.layer]) g.visible = btn.classList.contains('active');
-  };
+// Trackpads: OrbitControls scales each wheel step by |deltaY| / (100 * dpr), so a
+// Retina pinch (ctrl+wheel, deltaY ~1-10) barely moves. Set the speed per event,
+// in capture on the parent so it runs before OrbitControls' own wheel handler.
+viewport.addEventListener('wheel', event => {
+  controls.zoomSpeed = sheetControls.zoomSpeed = event.ctrlKey ? 12 : 3;
+}, { capture: true, passive: true });
+
+// Safari sends trackpad pinch as gesture events, not ctrl+wheel.
+let gestureScale = 1;
+viewport.addEventListener('gesturestart', event => { event.preventDefault(); gestureScale = 1; });
+viewport.addEventListener('gesturechange', event => {
+  event.preventDefault();
+  const factor = gestureScale / event.scale;          // <1 = zoom in
+  gestureScale = event.scale;
+  if (state.mode === 'model') {
+    const offset = modelCamera.position.clone().sub(controls.target);
+    const distance = THREE.MathUtils.clamp(offset.length() * factor, controls.minDistance, controls.maxDistance);
+    modelCamera.position.copy(controls.target).add(offset.setLength(distance));
+    controls.update();
+  } else {
+    sheetCamera.zoom = THREE.MathUtils.clamp(sheetCamera.zoom / factor, sheetControls.minZoom, sheetControls.maxZoom);
+    sheetCamera.updateProjectionMatrix();
+    sheetControls.update();
+  }
 });
 
+modelScene.add(new THREE.HemisphereLight(0xf7fbff, 0x75827b, 2.0));
+const sun = new THREE.DirectionalLight(0xfff7ec, 3.1);
+sun.position.set(-12, 24, 15);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -24;
+sun.shadow.camera.right = 24;
+sun.shadow.camera.top = 24;
+sun.shadow.camera.bottom = -24;
+sun.shadow.camera.near = 0.5;
+sun.shadow.camera.far = 80;
+sun.shadow.bias = -0.0004;
+modelScene.add(sun);
+const fillLight = new THREE.DirectionalLight(0xc9dce5, 0.8);
+fillLight.position.set(15, 8, -12);
+modelScene.add(fillLight);
+
+const g3d = new THREE.Group();
+const gLabels = new THREE.Group();
+const gGrid = new THREE.Group();
+const gConnections = new THREE.Group();
+const gSheet = new THREE.Group();
+const gText = new THREE.Group();
+modelScene.add(g3d, gLabels, gGrid, gConnections);
+sheetScene.add(gSheet, gText);
+
 function resize() {
-  const w = viewport.clientWidth, h = viewport.clientHeight;
-  camera.aspect = w / h; camera.updateProjectionMatrix();
-  renderer.setSize(w, h);
+  const width = Math.max(viewport.clientWidth, 1);
+  const height = Math.max(viewport.clientHeight, 1);
+  renderer.setSize(width, height, false);
+  modelCamera.aspect = width / height;
+  modelCamera.updateProjectionMatrix();
+  const halfH = state.sheetViewHeight / 2;
+  const halfW = halfH * width / height;
+  sheetCamera.left = -halfW;
+  sheetCamera.right = halfW;
+  sheetCamera.top = halfH;
+  sheetCamera.bottom = -halfH;
+  sheetCamera.updateProjectionMatrix();
 }
-addEventListener('resize', resize);
+new ResizeObserver(resize).observe(viewport);
 
-// ---------- data ----------
 async function fetchJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(url + ' → ' + r.status);
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url} → ${response.status}`);
   if (url.endsWith('.gz')) {
-    const ds = new DecompressionStream('gzip');
-    return JSON.parse(await new Response(r.body.pipeThrough(ds)).text());
+    const stream = response.body.pipeThrough(new DecompressionStream('gzip'));
+    return JSON.parse(await new Response(stream).text());
   }
-  return r.json();
+  return response.json();
 }
 
-const col3 = (c, fb = 0x222222) => c ? new THREE.Color(c[0], c[1], c[2]) : new THREE.Color(fb);
+const col3 = (value, fallback = '#202522') => value ? new THREE.Color(value[0], value[1], value[2]) : new THREE.Color(fallback);
 
 function buildSheet(dwg) {
-  g2d.clear(); gText.clear();
-  const page = dwg.pages[0];
-  const lines = [], lineCols = [], fills = [];
-  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
-  const track = (x, y) => { minx = Math.min(minx, x); miny = Math.min(miny, y); maxx = Math.max(maxx, x); maxy = Math.max(maxy, y); };
-  const push = (x0, y0, x1, y1, c) => { lines.push(x0, -y0, 0, x1, -y1, 0); lineCols.push(c.r, c.g, c.b, c.r, c.g, c.b); };
-  for (const p of page.paths) {
-    const sc = col3(p.stroke), fc = p.fill ? col3(p.fill, 0x000000) : null;
-    const shapePts = [];
-    for (const it of p.items) {
-      if (it[0] === 'l') {
-        if (p.op !== 'f') push(it[1][0], it[1][1], it[2][0], it[2][1], sc);
-        shapePts.push(it[1], it[2]); track(...it[1]); track(...it[2]);
-      } else if (it[0] === 'c') {
-        let prev = it[1];
+  if (state.sheetBuilt) return;
+  const page = dwg.pages[state.data?.project?.drawing_page ?? 0];
+  // dwg.json keeps unrotated PDF coords; map them to display orientation (/Rotate)
+  const M = page.rotation_matrix ?? [1, 0, 0, 1, 0, 0];
+  const T = p => [M[0] * p[0] + M[2] * p[1] + M[4], M[1] * p[0] + M[3] * p[1] + M[5]];
+  const rotateItem = item => {
+    if (item[0] === 're') {
+      const [a, b] = [T([item[1][0], item[1][1]]), T([item[1][2], item[1][3]])];
+      return ['re', [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]];
+    }
+    if (item[0] === 'qu') return ['qu', item[1].map(T)];
+    return [item[0], ...item.slice(1).map(T)];
+  };
+  const lines = [];
+  const lineColors = [];
+  const fillBuckets = new Map();
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const track = (x, y) => {
+    minX = Math.min(minX, x); minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+  };
+  const push = (x0, y0, x1, y1, color) => {
+    lines.push(x0, -y0, 0, x1, -y1, 0);
+    lineColors.push(color.r, color.g, color.b, color.r, color.g, color.b);
+  };
+  const addFill = (points, color) => {
+    const key = color.getHexString();
+    if (!fillBuckets.has(key)) fillBuckets.set(key, { color, positions: [], indices: [] });
+    const bucket = fillBuckets.get(key);
+    const geometry = new THREE.ShapeGeometry(new THREE.Shape(points.map(point => new THREE.Vector2(point[0], -point[1]))));
+    const positions = geometry.getAttribute('position');
+    const offset = bucket.positions.length / 3;
+    for (let i = 0; i < positions.count; i++) bucket.positions.push(positions.getX(i), positions.getY(i), positions.getZ(i));
+    if (geometry.index) {
+      for (let i = 0; i < geometry.index.count; i++) bucket.indices.push(geometry.index.getX(i) + offset);
+    } else {
+      for (let i = 0; i < positions.count; i++) bucket.indices.push(i + offset);
+    }
+    geometry.dispose();
+  };
+  for (const path of page.paths) {
+    const stroke = col3(path.stroke);
+    const fill = path.fill ? col3(path.fill) : null;
+    const shapePoints = [];
+    for (const item of path.items.map(rotateItem)) {
+      if (item[0] === 'l') {
+        if (path.op !== 'f') push(item[1][0], item[1][1], item[2][0], item[2][1], stroke);
+        shapePoints.push(item[1], item[2]);
+        track(...item[1]); track(...item[2]);
+      } else if (item[0] === 'c') {
+        let previous = item[1];
         for (let i = 1; i <= 12; i++) {
           const t = i / 12, mt = 1 - t;
-          const x = mt**3*it[1][0] + 3*mt*mt*t*it[2][0] + 3*mt*t*t*it[3][0] + t**3*it[4][0];
-          const y = mt**3*it[1][1] + 3*mt*mt*t*it[2][1] + 3*mt*t*t*it[3][1] + t**3*it[4][1];
-          if (p.op !== 'f') push(prev[0], prev[1], x, y, sc);
-          shapePts.push([x, y]); track(x, y); prev = [x, y];
+          const x = mt ** 3 * item[1][0] + 3 * mt * mt * t * item[2][0] + 3 * mt * t * t * item[3][0] + t ** 3 * item[4][0];
+          const y = mt ** 3 * item[1][1] + 3 * mt * mt * t * item[2][1] + 3 * mt * t * t * item[3][1] + t ** 3 * item[4][1];
+          if (path.op !== 'f') push(previous[0], previous[1], x, y, stroke);
+          shapePoints.push([x, y]); track(x, y); previous = [x, y];
         }
-      } else if (it[0] === 're') {
-        const [x0, y0, x1, y1] = it[1];
-        if (p.op !== 'f') { push(x0,y0,x1,y0,sc); push(x1,y0,x1,y1,sc); push(x1,y1,x0,y1,sc); push(x0,y1,x0,y0,sc); }
-        shapePts.push([x0,y0],[x1,y0],[x1,y1],[x0,y1]); track(x0,y0); track(x1,y1);
-      } else if (it[0] === 'qu') {
-        const q = it[1];
-        for (let i = 0; i < 4; i++) { const a = q[i], b = q[(i+1)%4]; if (p.op !== 'f') push(a[0],a[1],b[0],b[1],sc); shapePts.push(a); track(...a); }
+      } else if (item[0] === 're') {
+        const [x0, y0, x1, y1] = item[1];
+        if (path.op !== 'f') {
+          push(x0, y0, x1, y0, stroke); push(x1, y0, x1, y1, stroke);
+          push(x1, y1, x0, y1, stroke); push(x0, y1, x0, y0, stroke);
+        }
+        shapePoints.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
+        track(x0, y0); track(x1, y1);
+      } else if (item[0] === 'qu') {
+        const quad = [item[1][0], item[1][1], item[1][3], item[1][2]];  // PDF quad order ul,ur,ll,lr -> perimeter
+        for (let i = 0; i < 4; i++) {
+          const a = quad[i], b = quad[(i + 1) % 4];
+          if (path.op !== 'f') push(a[0], a[1], b[0], b[1], stroke);
+          shapePoints.push(a); track(...a);
+        }
       }
     }
-    if (fc && p.op !== 's' && shapePts.length > 2)
-      fills.push({ shape: new THREE.Shape(shapePts.map(pt => new THREE.Vector2(pt[0], -pt[1]))), color: fc });
+    if (fill && path.op !== 's' && shapePoints.length > 2) addFill(shapePoints, fill);
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(lineCols, 3));
-  g2d.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ vertexColors: true })));
-  for (const f of fills.slice(0, 8000)) {
-    const m = new THREE.Mesh(new THREE.ShapeGeometry(f.shape),
-      new THREE.MeshBasicMaterial({ color: f.color, side: THREE.DoubleSide }));
-    m.position.z = -0.1; g2d.add(m);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
+  gSheet.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.82 })));
+  for (const bucket of fillBuckets.values()) {
+    const fillGeometry = new THREE.BufferGeometry();
+    fillGeometry.setAttribute('position', new THREE.Float32BufferAttribute(bucket.positions, 3));
+    fillGeometry.setIndex(bucket.indices);
+    const mesh = new THREE.Mesh(fillGeometry, new THREE.MeshBasicMaterial({ color: bucket.color, side: THREE.DoubleSide }));
+    mesh.position.z = -0.1;
+    gSheet.add(mesh);
   }
-  const cx = (minx + maxx) / 2, cy = -(miny + maxy) / 2;
-  const paper = new THREE.Mesh(
-    new THREE.PlaneGeometry(maxx - minx + 60, maxy - miny + 60),
-    new THREE.MeshBasicMaterial({ color: 0xf5f2ea }));
-  paper.position.set(cx, cy, -1);
-  g2d.add(paper);
-  g2d.position.set(-cx, -cy, 0);
-  state.sheetCenter = { x: cx, y: -cy };  // pt-space centre (y down)
-  state.sheetSpan = Math.max(maxx - minx, maxy - miny);
-
-  for (const s of page.text.slice(0, 3000)) {
-    const c = document.createElement('canvas');
-    const fs = 48; c.width = Math.max(2, s.t.length * fs * 0.62); c.height = fs * 1.4;
-    const ctx = c.getContext('2d');
-    ctx.font = `${fs}px ${s.font || 'Arial'}`; ctx.fillStyle = '#222';
-    ctx.fillText(s.t, 0, fs);
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
-    const h = s.size * 1.4;
-    sp.scale.set(h * c.width / c.height, h, 1);
-    sp.center.set(0, 0.5);
-    sp.position.set(s.o[0], -s.o[1], 0.5);
-    if (s.dir && Math.abs(s.dir[1]) > 0.5) sp.material.rotation = s.dir[1] > 0 ? Math.PI / 2 : -Math.PI / 2;
-    gText.add(sp);
+  const centerX = (minX + maxX) / 2, centerY = -(minY + maxY) / 2;
+  const paper = new THREE.Mesh(new THREE.PlaneGeometry(maxX - minX + 50, maxY - minY + 50), new THREE.MeshBasicMaterial({ color: '#fbfaf5' }));
+  paper.position.set(centerX, centerY, -1);
+  gSheet.add(paper);
+  for (const span of page.text.slice(0, 3000)) {
+    const canvas = document.createElement('canvas');
+    const fontSize = 48;
+    canvas.width = Math.max(2, span.t.length * fontSize * 0.62);
+    canvas.height = fontSize * 1.4;
+    const context = canvas.getContext('2d');
+    context.font = `${fontSize}px ${span.font || 'Arial'}`;
+    context.fillStyle = '#252a27';
+    context.fillText(span.t, 0, fontSize);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+    const height = span.size * 1.4;
+    sprite.scale.set(height * canvas.width / canvas.height, height, 1);
+    sprite.center.set(0, 0.5);
+    const origin = T(span.o);
+    const dir = span.dir ? [M[0] * span.dir[0] + M[2] * span.dir[1], M[1] * span.dir[0] + M[3] * span.dir[1]] : [1, 0];
+    sprite.position.set(origin[0], -origin[1], 0.5);
+    sprite.material.rotation = Math.atan2(-dir[1], dir[0]);
+    gText.add(sprite);
   }
-  gText.position.copy(g2d.position);
+  state.sheetBounds = { minX, maxX, minY: -maxY, maxY: -minY, centerX, centerY };
+  state.sheetBuilt = true;
+  fitSheet();
 }
 
-// ---------- real section geometry ----------
-// Local frame: x = flange width, y = section depth, z = member axis (0..len).
-function iSectionGeo(sec, len, sc) {
-  const b = sec.b * sc, h = sec.h * sc, tw = Math.max(sec.tw * sc, 0.4), tf = sec.tf * sc;
-  const pts = [
-    [-b/2,-h/2],[b/2,-h/2],[b/2,-h/2+tf],[tw/2,-h/2+tf],[tw/2,h/2-tf],[b/2,h/2-tf],
-    [b/2,h/2],[-b/2,h/2],[-b/2,h/2-tf],[-tw/2,h/2-tf],[-tw/2,-h/2+tf],[-b/2,-h/2+tf],
-  ].map(p => new THREE.Vector2(p[0], p[1]));
-  const geo = new THREE.ExtrudeGeometry(new THREE.Shape(pts), { depth: len, bevelEnabled: false });
-  return geo;
+function fitSheet() {
+  if (!state.sheetBounds) return;
+  const bounds = state.sheetBounds;
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  const viewportAspect = Math.max(viewport.clientWidth, 1) / Math.max(viewport.clientHeight, 1);
+  state.sheetViewHeight = Math.max(height, width / viewportAspect) * 1.12;
+  sheetCamera.zoom = 1;
+  sheetCamera.position.set(bounds.centerX, bounds.centerY, 1000);
+  sheetControls.target.set(bounds.centerX, bounds.centerY, 0);
+  sheetControls.update();
+  resize();
 }
 
-function memberGeo(m, len, sc, sections) {
-  const sec = sections?.[m.section];
-  if (sec?.shape === 'I') return { geo: iSectionGeo(sec, len, sc), depth: sec.h * sc };
-  const h = (sec?.h ?? m.depth_mm) * sc, w = (sec?.b ?? m.width_mm) * sc;
-  const geo = new THREE.BoxGeometry(w, h, len);
-  geo.translate(0, 0, len / 2);  // match extrusion: axis 0..len
-  return { geo, depth: h };
+function rectangleShape(width, height) {
+  return new THREE.Shape([
+    new THREE.Vector2(-width / 2, -height / 2), new THREE.Vector2(width / 2, -height / 2),
+    new THREE.Vector2(width / 2, height / 2), new THREE.Vector2(-width / 2, height / 2),
+  ]);
 }
 
-// orient local (x=flange, y=depth, z=axis) onto segment dir with depth vertical
-function memberQuat(dir) {
-  const up = Math.abs(dir.z) > 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
-  const yAxis = up.clone().sub(dir.clone().multiplyScalar(up.dot(dir))).normalize();
-  const xAxis = new THREE.Vector3().crossVectors(yAxis, dir);
-  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis, yAxis, dir));
-}
-
-// ---------- connections ----------
-const PLATE_MAT = new THREE.MeshStandardMaterial({ color: 0x9aa7b2, metalness: 0.55, roughness: 0.35 });
-const BOLT_MAT = new THREE.MeshStandardMaterial({ color: 0x3d434b, metalness: 0.6, roughness: 0.4 });
-const BOLT_VIS = 2;  // bolts drawn 2x so they read at plan zoom
-
-function boltMesh(dia, len, sc, hexHead = true) {
-  const g = new THREE.Group();
-  const r = dia / 2 * BOLT_VIS * sc;
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len * sc, 10), BOLT_MAT);
-  g.add(shaft);
-  if (hexHead) {
-    const head = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.8, r * 1.8, dia * 0.7 * BOLT_VIS * sc, 6), BOLT_MAT);
-    head.position.y = len * sc / 2 + dia * 0.35 * BOLT_VIS * sc;
-    g.add(head);
+function memberGeometry(member, length, sections) {
+  const section = sections?.[member.section];
+  if (section?.shape === 'I') {
+    const b = section.b / 1000, h = section.h / 1000;
+    const tw = Math.max(section.tw / 1000, 0.0004), tf = section.tf / 1000;
+    const points = [
+      [-b / 2, -h / 2], [b / 2, -h / 2], [b / 2, -h / 2 + tf], [tw / 2, -h / 2 + tf],
+      [tw / 2, h / 2 - tf], [b / 2, h / 2 - tf], [b / 2, h / 2], [-b / 2, h / 2],
+      [-b / 2, h / 2 - tf], [-tw / 2, h / 2 - tf], [-tw / 2, -h / 2 + tf], [-b / 2, -h / 2 + tf],
+    ].map(point => new THREE.Vector2(...point));
+    return { geometry: new THREE.ExtrudeGeometry(new THREE.Shape(points), { depth: length, bevelEnabled: false }), depth: h };
   }
-  return g;
+  const height = (section?.h ?? member.depth_mm) / 1000;
+  const width = (section?.b ?? member.width_mm) / 1000;
+  if (section?.shape === 'RHS') {
+    const shape = rectangleShape(width, height);
+    const thickness = section.t / 1000;
+    const hole = new THREE.Path([
+      new THREE.Vector2(-width / 2 + thickness, -height / 2 + thickness),
+      new THREE.Vector2(-width / 2 + thickness, height / 2 - thickness),
+      new THREE.Vector2(width / 2 - thickness, height / 2 - thickness),
+      new THREE.Vector2(width / 2 - thickness, -height / 2 + thickness),
+    ]);
+    shape.holes.push(hole);
+    return { geometry: new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false }), depth: height };
+  }
+  const geometry = new THREE.BoxGeometry(width, height, length);
+  geometry.translate(0, 0, length / 2);
+  return { geometry, depth: height };
 }
 
-function plateMesh(w, d, t, sc) {
-  return new THREE.Mesh(new THREE.BoxGeometry(w * sc, d * sc, t * sc), PLATE_MAT);
+function memberQuaternion(direction, webDir) {
+  // posts: section depth along layout "web_dir" (plan), default model y (= world -z)
+  const up = Math.abs(direction.y) > 0.9 ? (webDir ? toWorld(webDir[0], webDir[1], 0).normalize() : new THREE.Vector3(0, 0, 1)) : new THREE.Vector3(0, 1, 0);
+  const yAxis = up.clone().sub(direction.clone().multiplyScalar(up.dot(direction))).normalize();
+  const xAxis = new THREE.Vector3().crossVectors(yAxis, direction).normalize();
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis, yAxis, direction));
 }
 
-function buildConnections(data, tf, sc) {
-  gConn.clear();
-  const conn = data.connections;
-  if (!conn) return;
-  const dirTf = (v) => {   // model-space direction -> viewer direction (linear part of tf)
-    const o = tf(0, 0, 0), p = tf(v[0], v[1], v[2]);
-    return new THREE.Vector3(p[0] - o[0], p[1] - o[1], p[2] - o[2]).normalize();
-  };
-  for (const j of conn.joints) {
-    const T = conn.types[j.type];
-    const [w, d, t] = T.plate;
-    const P = tf(...j.pos_mm);
-    const grp = new THREE.Group();
-    grp.position.set(P[0], P[1], P[2]);
-    if (T.kind === 'baseplate') {
-      const plate = plateMesh(w, d, t, sc);
-      plate.position.z = -t * sc / 2;
-      grp.add(plate);
-      for (const gx of [-1, 1]) for (const gy of [-1, 1]) {
-        const b = boltMesh(T.bolts.dia, T.bolts.projection_mm + t, sc);
-        b.position.set(gx * T.bolts.gauge[0] * sc, gy * T.bolts.gauge[1] * sc,
-                       (T.bolts.projection_mm - t) * sc / 2);
-        grp.add(b);
+const toWorld = (x, y, z) => new THREE.Vector3(x / 1000, z / 1000, -y / 1000);
+const directionToWorld = vector => toWorld(vector[0], vector[1], vector[2]).normalize();
+const PLATE_MATERIAL = new THREE.MeshStandardMaterial({ color: '#63736f', metalness: 0.72, roughness: 0.32 });
+const BOLT_MATERIAL = new THREE.MeshStandardMaterial({ color: '#35403c', metalness: 0.75, roughness: 0.3 });
+
+function boltMesh(diameter, length, withHead = true) {
+  const group = new THREE.Group();
+  const radius = diameter / 2000 * 1.35;
+  group.add(new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length / 1000, 12), BOLT_MATERIAL));
+  if (withHead) {
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(radius * 1.75, radius * 1.75, diameter / 1000, 6), BOLT_MATERIAL);
+    head.position.y = length / 2000 + diameter / 2000;
+    group.add(head);
+  }
+  return group;
+}
+
+// Rule-based joints (takeoff/connections.py) carry explicit geometry in model mm:
+// plates as boxes on local axes u, v (w = u x v), bolts as axis + diameter + length.
+function buildParts(joint) {
+  const group = new THREE.Group();
+  for (const part of joint.parts) {
+    const u = directionToWorld(part.u), v = directionToWorld(part.v);
+    const w = new THREE.Vector3().crossVectors(u, v).normalize();
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(...part.size.map(value => value / 1000)), PLATE_MATERIAL);
+    plate.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(u, v, w));
+    plate.position.copy(toWorld(...part.center));
+    group.add(plate);
+  }
+  for (const bolt of joint.bolt_parts) {
+    const mesh = boltMesh(bolt.dia, bolt.length);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), directionToWorld(bolt.dir));
+    mesh.position.copy(toWorld(...bolt.at));
+    group.add(mesh);
+  }
+  return group;
+}
+
+function buildConnections(data) {
+  if (!data.connections) return;
+  for (const joint of data.connections.joints) {
+    if (joint.parts) {
+      const group = buildParts(joint);
+      group.userData.members = joint.members;
+      group.traverse(object => { if (object.isMesh) { object.castShadow = true; object.receiveShadow = true; } });
+      gConnections.add(group);
+      continue;
+    }
+    const type = data.connections.types[joint.type];
+    const [width, depth, thickness] = type.plate;
+    const group = new THREE.Group();
+    group.position.copy(toWorld(...joint.pos_mm));
+    if (type.kind === 'baseplate' || type.kind === 'cap_plate') {
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(width / 1000, thickness / 1000, depth / 1000), PLATE_MATERIAL);
+      plate.position.y = -thickness / 2000;
+      group.add(plate);
+      const boltLength = type.bolts.length_mm ?? type.bolts.projection_mm + thickness;
+      for (const x of [-1, 1]) for (const z of [-1, 1]) {
+        const bolt = boltMesh(type.bolts.dia, boltLength);
+        bolt.position.set(x * type.bolts.gauge[0] / 1000, type.kind === 'baseplate' ? (type.bolts.projection_mm - thickness) / 2000 : 0, z * type.bolts.gauge[1] / 1000);
+        group.add(bolt);
       }
-    } else if (T.kind === 'cap_plate') {
-      const plate = plateMesh(w, d, t, sc);
-      plate.position.z = -t * sc / 2;
-      grp.add(plate);
-      for (const gx of [-1, 1]) for (const gy of [-1, 1]) {
-        const b = boltMesh(T.bolts.dia, T.bolts.length_mm, sc);
-        b.position.set(gx * T.bolts.gauge[0] * sc, gy * T.bolts.gauge[1] * sc, 0);
-        grp.add(b);
-      }
-    } else if (T.kind === 'end_plate') {
-      // vertical plate, face normal = joint normal (model space), centred at beam half-depth
-      const n = dirTf(j.normal ?? [0, -1, 0]);
-      const beamH = 157.6 * sc;  // B3 depth
-      const plate = plateMesh(d, t, w, sc);   // width across, thickness through, height vertical
-      plate.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
-      plate.position.copy(n).multiplyScalar(t * sc / 2);
-      plate.position.z += beamH / 2;
-      grp.add(plate);
-      for (const gx of [-1, 1]) for (const gz of [-1, 1]) {
-        const b = boltMesh(T.bolts.dia, T.bolts.length_mm, sc);
-        b.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
-        const off = new THREE.Vector3()
-          .addScaledVector(new THREE.Vector3().crossVectors(n, new THREE.Vector3(0, 0, 1)).normalize(), gx * T.bolts.gauge[0] * sc)
-          .addScaledVector(new THREE.Vector3(0, 0, 1), gz * T.bolts.gauge[1] * sc + beamH / 2);
-        b.position.copy(off);
-        grp.add(b);
+    } else if (type.kind === 'end_plate') {
+      const normal = directionToWorld(joint.normal ?? [0, -1, 0]);
+      const beamHeight = (joint.beam_h_mm ?? type.beam_h_mm ?? 157.6) / 1000;
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(depth / 1000, width / 1000, thickness / 1000), PLATE_MATERIAL);
+      plate.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+      plate.position.copy(normal).multiplyScalar(thickness / 2000);
+      plate.position.y += beamHeight / 2;
+      group.add(plate);
+      const across = new THREE.Vector3().crossVectors(normal, new THREE.Vector3(0, 1, 0)).normalize();
+      for (const x of [-1, 1]) for (const y of [-1, 1]) {
+        const bolt = boltMesh(type.bolts.dia, type.bolts.length_mm);
+        bolt.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+        bolt.position.addScaledVector(across, x * type.bolts.gauge[0] / 1000);
+        bolt.position.y += y * type.bolts.gauge[1] / 1000 + beamHeight / 2;
+        group.add(bolt);
       }
     }
-    gConn.add(grp);
+    group.userData.members = joint.members;
+    group.traverse(object => { if (object.isMesh) { object.castShadow = true; object.receiveShadow = true; } });
+    gConnections.add(group);
+  }
+}
+
+function makeLabel(mark) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 88;
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#17211f';
+  context.beginPath();
+  context.roundRect(3, 3, 250, 82, 18);
+  context.fill();
+  context.strokeStyle = '#ffffff44';
+  context.lineWidth = 2;
+  context.stroke();
+  context.font = '600 43px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillStyle = '#ffffff';
+  context.fillText(mark, 128, 45);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
+  sprite.scale.set(1.05, 0.36, 1);
+  sprite.renderOrder = 20;
+  return sprite;
+}
+
+function updateMaterials() {
+  for (const [mark, meshes] of meshesByMark) {
+    for (const mesh of meshes) {
+      const selected = state.selected === mark;
+      const color = selected ? '#df6742' : state.display === 'status' ? STATUS_COLOR[mesh.userData.status] : '#78908d';
+      mesh.material.color.set(color || '#78908d');
+      mesh.material.emissive.set(selected ? '#341008' : '#000000');
+      mesh.material.emissiveIntensity = selected ? 0.5 : 0;
+      mesh.material.wireframe = state.partRender === 'wireframe';
+      mesh.material.transparent = state.partRender === 'shaded' && !selected;
+      mesh.material.opacity = mesh.material.transparent ? 0.3 : 1;
+      mesh.material.depthWrite = !mesh.material.transparent;
+      mesh.visible = !state.isolated || state.isolated === mark;
+    }
   }
 }
 
 function buildModel(data) {
-  g3d.clear(); gMark.clear(); gGrid.clear(); gConn.clear(); meshesByMark.clear();
-  const reg = data.registration, sc = reg ? reg.scale_pt_per_mm : 1;
-  const cc = state.sheetCenter || { x: 0, y: 0 };
-  // model mm -> viewer coords (aligned with the 2D sheet when registration exists)
-  const tf = reg ? (mx, my, mz) => [
-      (mx * reg.M[0][0] + my * reg.M[1][0] + reg.M[2][0]) - cc.x,
-      -(mx * reg.M[0][1] + my * reg.M[1][1] + reg.M[2][1] - cc.y),
-      mz * sc,
-    ] : (mx, my, mz) => [mx, -my, mz];
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-  for (const m of data.model.members) {
-    const mat = new THREE.MeshStandardMaterial({
-      color: STATUS_COLOR[m.status] ?? 0x8fb8ff, metalness: 0.35, roughness: 0.5 });
-    for (const s of m.segments) {
-      const a = new THREE.Vector3(...tf(s.from[0], s.from[1], s.from[2]));
-      const b = new THREE.Vector3(...tf(s.to[0], s.to[1], s.to[2]));
-      const dir = b.clone().sub(a), len = dir.length();
-      dir.normalize();
-      const { geo, depth } = memberGeo(m, len, sc, data.sections);
-      const box = new THREE.Mesh(geo, mat);
-      const vertical = Math.abs(dir.z) > 0.9;
-      const lift = vertical ? 0 : depth / 2;   // horizontal beams rest on their bottom flange
-      box.position.copy(a); box.position.z += lift;
-      box.quaternion.copy(memberQuat(dir));
-      box.userData.mark = m.mark;
-      g3d.add(box);
-      if (!meshesByMark.has(m.mark)) meshesByMark.set(m.mark, []);
-      meshesByMark.get(m.mark).push(box);
-      const mid = a.clone().add(b).multiplyScalar(0.5); mid.z += lift;
-      const ring = new THREE.Mesh(new THREE.RingGeometry(220 * sc, 300 * sc, 32), ringMat);
-      ring.position.copy(mid); ring.position.z += depth;
-      gMark.add(ring);
-      const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64;
-      const ctx = cv.getContext('2d'); ctx.font = '600 52px system-ui'; ctx.fillStyle = '#fff';
-      ctx.fillText(m.mark, 10, 46);
-      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true }));
-      sp.scale.set(900 * sc, 450 * sc, 1);
-      sp.position.copy(mid); sp.position.z += 700 * sc;
-      gMark.add(sp);
+  g3d.clear(); gLabels.clear(); gGrid.clear(); gConnections.clear();
+  meshesByMark.clear();
+  const materials = new Map();
+  let segmentCount = 0;
+  for (const member of data.model.members) {
+    if (!materials.has(member.mark)) {
+      materials.set(member.mark, new THREE.MeshStandardMaterial({ color: '#78908d', metalness: 0.66, roughness: 0.34 }));
+      meshesByMark.set(member.mark, []);
+    }
+    let longest = null;
+    for (const segment of member.segments) {
+      const start = toWorld(...segment.from);
+      const end = toWorld(...segment.to);
+      const direction = end.clone().sub(start);
+      const length = direction.length();
+      if (length < 0.0001) continue;
+      direction.normalize();
+      const { geometry, depth } = memberGeometry(member, length, data.sections);
+      const mesh = new THREE.Mesh(geometry, materials.get(member.mark));
+      const vertical = Math.abs(direction.y) > 0.9;
+      const lift = vertical ? 0 : depth / 2;
+      mesh.position.copy(start);
+      mesh.position.y += lift;
+      mesh.quaternion.copy(memberQuaternion(direction, member.web_dir));
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.userData.mark = member.mark;
+      mesh.userData.status = member.status;
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry, 32), new THREE.LineBasicMaterial({ color: '#31433e', transparent: true, opacity: 0.22 }));
+      mesh.add(edges);
+      g3d.add(mesh);
+      meshesByMark.get(member.mark).push(mesh);
+      if (!longest || length > longest.length) longest = { start, end, length, lift, depth };
+      segmentCount++;
+    }
+    if (longest) {
+      const label = makeLabel(member.mark);
+      label.position.copy(longest.start).add(longest.end).multiplyScalar(0.5);
+      label.position.y += longest.lift + longest.depth / 2 + 0.55;
+      label.userData.mark = member.mark;
+      gLabels.add(label);
     }
   }
-  const g = data.grids, pts = [], cols = [], gc = new THREE.Color(0x2a333f);
-  for (const x of Object.values(g.x_grids)) { const p0 = tf(x, 0, 0), p1 = tf(x, 22000, 0); pts.push(...p0, ...p1); cols.push(gc, gc); }
-  for (const y of Object.values(g.y_grids)) { const p0 = tf(0, y, 0), p1 = tf(22000, y, 0); pts.push(...p0, ...p1); cols.push(gc, gc); }
-  const flat = []; for (const c of cols) flat.push(c.r, c.g, c.b);
-  const gg = new THREE.BufferGeometry();
-  gg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  gg.setAttribute('color', new THREE.Float32BufferAttribute(flat, 3));
-  gGrid.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ vertexColors: true })));
-  if (reg) gGrid.position.z = 1;
-  buildConnections(data, tf, sc);
-
-  if (!reg) {
-    const span = state.sheetSpan;
-    const box3 = new THREE.Box3().setFromObject(g3d);
-    const c3 = box3.getCenter(new THREE.Vector3());
-    const size3 = box3.getSize(new THREE.Vector3());
-    const k = span * 0.55 / Math.max(size3.x, size3.y, 1);
-    for (const grp of [g3d, gMark, gGrid, gConn]) {
-      grp.scale.setScalar(k);
-      grp.position.set(span * 0.62 - c3.x * k, -c3.y * k, -c3.z * k);
-    }
-  }
-  const mb = new THREE.Box3().setFromObject(g3d);
-  state.modelCenter = mb.getCenter(new THREE.Vector3());
-  const ms = mb.getSize(new THREE.Vector3());
-  state.modelSpan = Math.max(ms.x, ms.y, 1);
+  buildConnections(data);
+  const bounds = new THREE.Box3().setFromObject(g3d);
+  state.modelCenter = bounds.getCenter(new THREE.Vector3());
+  state.modelSize = bounds.getSize(new THREE.Vector3());
+  state.modelRadius = Math.max(state.modelSize.length() / 2, 2);
+  const groundY = bounds.min.y - 0.045;
+  const gridSize = Math.max(24, Math.ceil(Math.max(state.modelSize.x, state.modelSize.z) * 1.5 / 2) * 2);
+  const grid = new THREE.GridHelper(gridSize, Math.min(gridSize, 36), '#8d9b95', '#aab5af');
+  grid.position.set(state.modelCenter.x, groundY, state.modelCenter.z);
+  grid.material.transparent = true;
+  grid.material.opacity = 0.35;
+  gGrid.add(grid);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.ShadowMaterial({ color: '#34443e', opacity: 0.16 }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = groundY - 0.01;
+  ground.receiveShadow = true;
+  gGrid.add(ground);
+  const axes = new THREE.AxesHelper(1.4);
+  axes.position.set(bounds.min.x - 0.8, groundY + 0.01, bounds.max.z + 0.8);
+  gGrid.add(axes);
+  $('#model-meta').textContent = `${data.model.members.length} assemblies · ${segmentCount} segments`;
+  updateMaterials();
 }
 
-// ---------- selection ----------
-const memberCard = document.getElementById('member-card');
-
-function fillMemberCard(mark) {
-  if (!mark || !state.data) { memberCard.classList.add('hidden'); return; }
-  const d = state.data;
-  const rows = d.members.filter(m => m.mark === mark);
-  if (!rows.length) { memberCard.classList.add('hidden'); return; }
-  const m = rows[0];
-  const mass = rows.reduce((s, r) => s + r.mass_kg, 0);
-  const sec = d.sections?.[m.section];
-  const secRows = sec ? [
-    ['Depth h', sec.h + ' mm'], ['Flange width b', sec.b + ' mm'],
-    ...(sec.shape === 'I' ? [['Web tw', sec.tw + ' mm'], ['Flange tf', sec.tf + ' mm'], ['Root radius r', sec.r + ' mm']]
-                         : [['Wall t', sec.t + ' mm']]),
-    ['Mass', sec.kg_m + ' kg/m'], ['Area', sec.A_cm2 + ' cm²'],
-    ...(sec.Ix_cm4 ? [['Ixx', sec.Ix_cm4.toLocaleString() + ' cm⁴'], ['Iyy', sec.Iy_cm4.toLocaleString() + ' cm⁴']] : []),
-  ] : [];
-  const conns = (d.connections?.joints ?? []).filter(j => j.members.includes(mark));
-  const connHtml = conns.map(j => {
-    const T = d.connections.types[j.type];
-    return `<div class="mc-conn"><span class="mark-chip">${j.type}</span> ${esc(T.desc)}<br>
-      <span style="color:var(--text-dim)">${T.plate.join('×')} mm plate · ${T.bolts.n}No ${esc(T.bolts.spec)} · ${j.id.replace('J-', '')} · ${esc(j.note)}</span></div>`;
-  }).join('');
-  const assum = (d.assumptions ?? []).filter(a => a.mark === mark);
-  memberCard.innerHTML = `
-    <div class="mc-head"><span class="mark-chip">${mark}</span><span class="mc-sec">${esc(m.section)}</span>
-      <span class="pill pill-${m.status}">${m.status}</span>
-      <button class="mc-close" title="close">×</button></div>
-    <div class="mc-grid">
-      <span class="k">Quantity</span><span class="v">${m.qty}</span>
-      <span class="k">Length each</span><span class="v">${fmt(m.length_mm)} mm</span>
-      <span class="k">Total mass</span><span class="v">${fmt(mass)} kg</span>
-    </div>
-    <div class="mc-loc">${esc(m.location)}<br>Source: ${esc(m.source)}</div>
-    ${secRows.length ? `<h5>Section properties (BS 4-1 / EN 10365)</h5>
-    <div class="mc-grid">${secRows.map(([k, v]) => `<span class="k">${k}</span><span class="v">${v}</span>`).join('')}</div>` : ''}
-    ${conns.length ? `<h5>Connections</h5>${connHtml}` : ''}
-    ${assum.map(a => `<div class="mc-note">⚠ ${esc(a.text)}</div>`).join('')}`;
-  memberCard.classList.remove('hidden');
-  memberCard.querySelector('.mc-close').onclick = () => select(null);
+let cameraAnimation = null;
+const viewHistory = [];
+function pushView() {
+  const view = state.mode === 'model'
+    ? { mode: 'model', target: controls.target.clone(), position: modelCamera.position.clone() }
+    : { mode: 'drawing', target: sheetControls.target.clone(), position: sheetCamera.position.clone(), zoom: sheetCamera.zoom };
+  const last = viewHistory.at(-1);
+  if (last && last.mode === view.mode && last.target.distanceTo(view.target) < 1e-4 && last.position.distanceTo(view.position) < 1e-4 && last.zoom === view.zoom) return;
+  viewHistory.push(view);
+  if (viewHistory.length > 50) viewHistory.shift();
 }
 
-function select(mark) {
-  state.selected = mark;
-  for (const [mk, meshes] of meshesByMark)
-    for (const mesh of meshes) mesh.material.emissive = new THREE.Color(mk === mark ? 0x333a45 : 0x000000);
-  document.querySelectorAll('tr.rowmark').forEach(r => {
-    r.classList.toggle('selected', r.dataset.mark === mark);
-    if (r.dataset.mark === mark) r.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  });
-  const info = document.getElementById('sel-info');
-  if (mark && state.data) {
-    const rows = state.data.members.filter(m => m.mark === mark);
-    const mass = rows.reduce((s, m) => s + m.mass_kg, 0);
-    info.textContent = `${mark} · ${rows[0].section} · ${mass.toLocaleString()} kg`;
-    const bbox = new THREE.Box3();
-    for (const mesh of meshesByMark.get(mark) ?? []) bbox.expandByObject(mesh);
-    if (!bbox.isEmpty()) {
-      const center = bbox.getCenter(new THREE.Vector3());
-      const size = bbox.getSize(new THREE.Vector3());
-      flyTo(center, Math.max(size.x, size.y, size.z) * 1.7 + 100);
-    }
-  } else info.textContent = 'click a member or table row';
-  fillMemberCard(mark);
-}
-
-let camAnim = null;
-function flyTo(target, dist) {
-  const t0 = performance.now(), dur = 700;
-  const fromT = controls.target.clone(), fromP = camera.position.clone();
-  const cur = fromP.clone().sub(fromT);
-  // keep current azimuth but approach at ~35 deg elevation so 3D detail reads
-  const az = Math.atan2(cur.y, cur.x);
-  const dir = new THREE.Vector3(Math.cos(az) * Math.cos(0.61), Math.sin(az) * Math.cos(0.61), Math.sin(0.61));
-  const toP = target.clone().add(dir.multiplyScalar(dist));
-  camAnim = () => {
-    const t = Math.min((performance.now() - t0) / dur, 1), e = 1 - (1 - t) ** 3;
-    controls.target.lerpVectors(fromT, target, e);
-    camera.position.lerpVectors(fromP, toP, e);
-    if (t >= 1) camAnim = null;
+function animateCamera(target, position, duration = 500) {
+  pushView();
+  const started = performance.now();
+  const fromTarget = controls.target.clone();
+  const fromPosition = modelCamera.position.clone();
+  cameraAnimation = () => {
+    const progress = Math.min((performance.now() - started) / duration, 1);
+    const eased = 1 - (1 - progress) ** 3;
+    controls.target.lerpVectors(fromTarget, target, eased);
+    modelCamera.position.lerpVectors(fromPosition, position, eased);
+    if (progress >= 1) cameraAnimation = null;
   };
 }
 
-const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
-let downAt = null;
-renderer.domElement.addEventListener('pointerdown', e => downAt = [e.clientX, e.clientY]);
-renderer.domElement.addEventListener('pointerup', e => {
-  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
-  const r = renderer.domElement.getBoundingClientRect();
-  ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-  ray.setFromCamera(ptr, camera);
-  const hit = ray.intersectObjects(g3d.children, false)[0];
-  select(hit ? hit.object.userData.mark : null);
-});
-
-// ---------- camera presets ----------
-const camViews = {
-  iso:   { pos: [0.45, -1.0, 0.75], tgt: [0, 0, 0] },
-  top:   { pos: [0, 0, 1.45],       tgt: [0, 0, 0] },
-  front: { pos: [0, -1.7, 0.25],    tgt: [0, 0, 0] },
-};
-function setCam(name) {
-  camAnim = null;
-  const v = camViews[name];
-  const fit = state.data?.registration ? state.modelSpan : state.sheetSpan;
-  const c = state.data?.registration && state.modelCenter ? state.modelCenter : new THREE.Vector3();
-  camera.position.set(c.x + v.pos[0] * fit, c.y + v.pos[1] * fit, c.z + v.pos[2] * fit);
-  controls.target.set(c.x + v.tgt[0] * fit, c.y + v.tgt[1] * fit, c.z + v.tgt[2] * fit);
+function setCamera(name) {
+  if (!state.modelCenter) return;
+  pushView();
+  cameraAnimation = null;
+  const directions = {
+    iso: new THREE.Vector3(1, 0.82, 1.25).normalize(),
+    top: new THREE.Vector3(0, 1, 0.001).normalize(),
+    front: new THREE.Vector3(0, 0.12, 1).normalize(),
+    right: new THREE.Vector3(1, 0.12, 0).normalize(),
+  };
+  const direction = name === 'fit' ? modelCamera.position.clone().sub(controls.target).normalize() : directions[name];
+  const verticalFov = THREE.MathUtils.degToRad(modelCamera.fov);
+  const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * modelCamera.aspect);
+  const fitFov = Math.min(verticalFov, horizontalFov);
+  const fitMargin = modelCamera.aspect < 1 ? 1.02 : 0.82;
+  const distance = state.modelRadius / Math.sin(fitFov / 2) * fitMargin;
+  controls.target.copy(state.modelCenter);
+  modelCamera.position.copy(state.modelCenter).addScaledVector(direction, distance);
+  modelCamera.up.set(0, 1, 0);
   controls.update();
-}
-document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => setCam(b.dataset.cam));
-addEventListener('keydown', e => { if (e.key === 'Escape') select(null); });
-
-// ---------- UI panels ----------
-const fmt = n => n.toLocaleString('en-GB', { maximumFractionDigits: 2 });
-const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-
-function fillKPIs(d) {
-  document.getElementById('project-sub').textContent =
-    `${d.project.name} · Job ${d.project.job} · ${d.project.package}`;
-  document.getElementById('chip-drawings').textContent = d.project.drawings.join('  ·  ');
-  document.getElementById('kpi-net').textContent = fmt(d.summary.net_t);
-  document.getElementById('kpi-order').textContent = fmt(d.summary.order_t) + ' t';
-  document.getElementById('kpi-quote').textContent = '£' + fmt(d.summary.quote_total);
-  document.getElementById('kpi-marks').textContent = d.summary.n_marks;
-  document.getElementById('kpi-verify').textContent = d.summary.n_to_verify;
-  document.getElementById('foot-src').textContent = 'Sources: ' + d.project.drawings.join(' · ');
-  document.getElementById('foot-gen').textContent = 'Generated ' + d.generated.slice(0, 16).replace('T', ' ') + ' UTC';
+  $$('[data-cam]').forEach(button => button.classList.toggle('active', button.dataset.cam === name));
 }
 
-function fillSchedule(d) {
-  const rows = d.members.map(m => `
-    <tr class="rowmark" data-mark="${m.mark}">
-      <td><span class="mark-chip">${m.mark}</span></td>
-      <td class="mono">${esc(m.section)}</td>
-      <td class="num">${m.qty}</td>
-      <td class="num">${fmt(m.length_mm)}</td>
-      <td class="num">${fmt(m.mass_kg)}</td>
-      <td><span class="pill pill-${m.status}">${m.status}</span></td>
-    </tr>`).join('');
-  const plates = d.plates.map(p => `
-    <tr><td><span class="mark-chip">${p.mark}</span></td>
-      <td>${esc(p.description)} <span class="mono" style="color:var(--text-dim)">${p.size}</span></td>
-      <td class="num">${p.qty}</td><td class="num">—</td><td class="num">${fmt(p.mass_kg)}</td><td></td></tr>`).join('');
-  document.getElementById('tab-schedule').innerHTML = `
-    <table><thead><tr><th>Mark</th><th>Section / item</th><th class="num">Qty</th>
-    <th class="num">Len (mm)</th><th class="num">Mass (kg)</th><th>Status</th></tr></thead>
-    <tbody>${rows}${plates}</tbody></table>`;
-  document.querySelectorAll('tr.rowmark').forEach(r => r.onclick = () => select(r.dataset.mark));
+function focusMember(mark) {
+  const bounds = new THREE.Box3();
+  for (const mesh of meshesByMark.get(mark) ?? []) bounds.expandByObject(mesh);
+  if (bounds.isEmpty()) return;
+  const center = bounds.getCenter(new THREE.Vector3());
+  const size = bounds.getSize(new THREE.Vector3());
+  const direction = modelCamera.position.clone().sub(controls.target).normalize();
+  const distance = Math.max(size.length() * 1.25 + 0.8, 2.5);
+  animateCamera(center, center.clone().addScaledVector(direction, distance));
 }
 
-function fillQuote(d) {
-  const items = d.quote.items.map(i => `
-    <tr><td>${esc(i.item)}</td><td class="num">${i.qty} ${i.unit}</td>
-    <td class="num">${fmt(i.rate)}</td><td class="num">${fmt(i.total)}</td></tr>`).join('');
-  document.getElementById('tab-quote').innerHTML = `
-    <table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Total</th></tr></thead>
-    <tbody>${items}
-    <tr><td>Subtotal</td><td></td><td></td><td class="num">${fmt(d.quote.subtotal)}</td></tr>
-    <tr><td>Overheads &amp; profit ${d.quote.overhead_profit_pct}%</td><td></td><td></td>
-        <td class="num">${fmt(d.quote.overhead_profit)}</td></tr>
-    <tr class="qtotal"><td>Total</td><td></td><td></td>
-        <td class="num">£${fmt(d.quote.total)}</td></tr></tbody></table>
-    <div class="mh-cards">
-      <div class="mh-card"><div class="v">${d.manhours.fabrication_hours}</div><div class="l">fabrication hours</div></div>
-      <div class="mh-card"><div class="v">${d.manhours.erection_hours}</div><div class="l">erection hours</div></div>
-      <div class="mh-card"><div class="v">${d.quote.procurement.order_t.toFixed(2)}t</div><div class="l">to procure (incl. ${d.quote.procurement.waste_pct}% waste)</div></div>
+function focusConnection(id) {
+  const joint = state.data?.connections?.joints.find(item => (item.id ?? `${item.type}`) === id && item.pos_mm);
+  if (!joint) return;
+  showPage('model');
+  setViewMode('model');
+  const center = toWorld(...joint.pos_mm);
+  const direction = modelCamera.position.clone().sub(controls.target).normalize();
+  animateCamera(center, center.clone().addScaledVector(direction, 1.1));
+}
+
+function showPage(name) {
+  document.body.dataset.page = name;
+  $$('.nav-item').forEach(button => button.classList.toggle('active', button.dataset.page === name));
+  $$('.page').forEach(page => page.classList.toggle('active', page.id === `page-${name}`));
+  $('#page-crumb').textContent = PAGE_COPY[name][3];
+  requestAnimationFrame(resize);
+}
+
+function renderMemberList() {
+  if (!state.data) return;
+  const query = $('#member-search').value.trim().toLowerCase();
+  const members = state.data.members.filter(member => {
+    const matchesQuery = `${member.mark} ${member.section}`.toLowerCase().includes(query);
+    const matchesFilter = state.filter === 'all' || member.status !== 'CONFIRMED';
+    return matchesQuery && matchesFilter;
+  });
+  $('#member-list').innerHTML = members.length ? members.map(member => `
+    <button class="member-row ${state.selected === member.mark ? 'selected' : ''}" data-mark="${esc(member.mark)}">
+      <span class="mark-badge">${esc(member.mark)}</span>
+      <span class="member-main"><strong>${esc(member.section)}</strong><small>${member.qty} × ${fmt(member.length_mm / 1000)} m</small></span>
+      <span class="member-side"><strong>${fmt(member.mass_kg, 1)} kg</strong><small><i class="status-dot ${member.status}"></i>${member.status}</small></span>
+    </button>`).join('') : '<div class="empty-list">No members match this search.</div>';
+  $$('#member-list .member-row').forEach(button => button.onclick = () => selectMember(button.dataset.mark));
+}
+
+function fillMemberDetail(mark) {
+  if (!mark || !state.data) return;
+  const rows = state.data.members.filter(member => member.mark === mark);
+  if (!rows.length) return;
+  const member = rows[0];
+  const mass = rows.reduce((sum, row) => sum + row.mass_kg, 0);
+  const section = state.data.sections?.[member.section];
+  const properties = section ? [
+    ['Depth h', `${section.h} mm`], ['Flange width b', `${section.b} mm`],
+    ...(section.shape === 'I' ? [['Web tw', `${section.tw} mm`], ['Flange tf', `${section.tf} mm`], ['Root radius', `${section.r} mm`]] : [['Wall thickness', `${section.t} mm`]]),
+    ['Unit mass', `${section.kg_m} kg/m`], ['Section area', `${section.A_cm2} cm²`],
+    ...(section.Ix_cm4 ? [['Ixx', `${fmt(section.Ix_cm4, 0)} cm⁴`], ['Iyy', `${fmt(section.Iy_cm4, 0)} cm⁴`]] : []),
+  ] : [];
+  const joints = (state.data.connections?.joints ?? []).filter(joint => joint.members.includes(mark));
+  $('#inspector-detail').innerHTML = `
+    <div class="detail-head"><button class="back-button" id="detail-back">← Back to schedule</button>
+      <div class="detail-title"><span class="mark-badge">${esc(mark)}</span><div><h2>${esc(member.section)}</h2><p><span class="pill pill-${member.status}">${member.status}</span></p></div></div>
     </div>
-    <p class="qa-note">Illustrative UK fabricator rates — substitute live rates before issuing.</p>`;
+    <div class="detail-body">
+      <div class="detail-metrics"><div class="detail-metric"><span>Quantity</span><strong>${member.qty}</strong></div><div class="detail-metric"><span>Length each</span><strong>${fmt(member.length_mm / 1000)} m</strong></div><div class="detail-metric"><span>Total mass</span><strong>${fmt(mass, 1)} kg</strong></div></div>
+      <section class="detail-section"><h3>Location &amp; source</h3><p class="detail-note">${esc(member.location)}<br><br>${esc(member.source)}</p></section>
+      ${properties.length ? `<section class="detail-section"><h3>Section properties</h3><div class="property-grid">${properties.map(([key, value]) => `<span>${key}</span><span>${value}</span>`).join('')}</div></section>` : ''}
+      ${joints.length ? `<section class="detail-section"><h3>Connections</h3>${joints.map(joint => {
+        if (joint.auto) return `<div class="connection-item" data-joint="${esc(joint.id)}" role="button" tabindex="0" title="Zoom to this connection"><strong>${esc(joint.id)} · ${esc(joint.rule.replace(/_/g, ' '))}${joint.variant ? ` (${esc(joint.variant)})` : ''} · rule-based</strong><span>${esc(joint.note)}${joint.warnings.map(warning => `<br>⚠ ${esc(warning)}`).join('')}</span></div>`;
+        const type = state.data.connections.types[joint.type];
+        return `<div class="connection-item"><strong>${esc(joint.type)} · ${esc(type.desc)}</strong><span>${type.plate.join(' × ')} mm plate · ${type.bolts.n}No ${esc(type.bolts.spec)}<br>${esc(joint.note)}</span></div>`;
+      }).join('')}</section>` : ''}
+      ${member.notes ? `<div class="detail-warning"><strong>Review note</strong><br>${esc(member.notes)}</div>` : ''}
+    </div>
+    <div class="detail-actions"><button class="button" id="focus-member">Focus member in 3D</button></div>`;
+  $('#inspector-list').hidden = true;
+  $('#inspector-detail').hidden = false;
+  $('#detail-back').onclick = () => selectMember(null, false);
+  $('#focus-member').onclick = () => { setViewMode('model'); focusMember(mark); };
+  $$('#inspector-detail [data-joint]').forEach(item => item.onclick = () => focusConnection(item.dataset.joint));
 }
 
-function fillProcurement(d) {
-  const marks = [...new Set(d.members.map(m => m.mark))];
-  const colour = mk => MARK_PALETTE[marks.indexOf(mk) % MARK_PALETTE.length];
-  const bars = d.cut_list.map(bar => {
-    const segs = bar.pieces.map(p =>
-      `<div class="bar-seg" style="width:${p.length_mm / bar.stock_mm * 100}%;background:${colour(p.mark)}"
-        title="${p.mark} · ${p.length_mm}mm">${p.mark}</div>`).join('');
-    const off = bar.offcut_mm > 0
-      ? `<div class="bar-offcut" style="width:${bar.offcut_mm / bar.stock_mm * 100}%"></div>` : '';
-    return `<div class="bar-row">
-      <div class="bar-head">Bar ${bar.bar} · ${esc(bar.section)} · 12.0 m stock · offcut ${fmt(bar.offcut_mm)} mm</div>
-      <div class="bar-track">${segs}${off}</div></div>`;
-  }).join('');
-  const fasteners = d.fasteners.map(f =>
-    `<tr><td>${esc(f.description)}</td><td class="num">${f.qty}</td></tr>`).join('');
-  document.getElementById('tab-procurement').innerHTML = `
-    <p class="qa-note">Cutting list — first-fit into ${d.cut_list[0]?.stock_mm / 1000 ?? 12} m stock bars.</p>
-    ${bars}
-    <h4 style="margin:18px 0 6px">Fasteners</h4>
-    <table><tbody>${fasteners}</tbody></table>`;
-}
-
-function fillQA(d) {
-  const items = d.assumptions.map(a => `
-    <div class="qa-item"><span class="mark-chip qa-mark">${a.mark}</span><span>${esc(a.text)}</span></div>`).join('');
-  const checks = d.checks.map(c =>
-    `<div class="check-ok">${c.deviation_pct < 15 ? '✓' : '⚠'} ${c.mark}: modelled ${fmt(c.modelled_mm)} mm vs schedule ${fmt(c.schedule_mm)} mm (${c.deviation_pct}%)</div>`).join('');
-  document.getElementById('tab-qa').innerHTML = `
-    <h4 style="margin:2px 0 8px">Assumptions &amp; missing information</h4>
-    ${items}
-    <h4 style="margin:16px 0 6px">Model ↔ schedule length cross-check</h4>
-    ${checks}`;
-}
-
-document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
-  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
-  document.querySelectorAll('.tabpage').forEach(p =>
-    p.classList.toggle('active', p.id === 'tab-' + t.dataset.tab));
-});
-
-// ---------- boot ----------
-async function loadAll() {
-  try {
-    if (!state.dwg) state.dwg = await fetchJSON('data/output/roof_plan.dwg.json.gz');
-    state.data = await fetchJSON('data/output/app_data.json');
-    buildSheet(state.dwg);
-    buildModel(state.data);
-    fillKPIs(state.data); fillSchedule(state.data); fillQuote(state.data);
-    fillProcurement(state.data); fillQA(state.data);
-    resize(); setCam('iso');
-  } catch (e) {
-    document.getElementById('sel-info').textContent = 'load failed: ' + e.message;
+function selectMember(mark, focus = true) {
+  state.selected = mark || null;
+  updateMaterials();
+  renderMemberList();
+  if (mark) {
+    showPage('model');
+    document.body.classList.remove('utilities-collapsed');
+    $('#show-utilities').hidden = true;
+    $('#inspector').classList.remove('collapsed');
+    $('#collapse-inspector').textContent = '−';
+    fillMemberDetail(mark);
+    const member = state.data.members.find(item => item.mark === mark);
+    $('#sel-info').textContent = `${mark} · ${member.section} · ${fmt(member.mass_kg, 1)} kg`;
+    if (focus) {
+      if (state.mode !== 'model') setViewMode('model');
+      focusMember(mark);
+    }
+  } else {
+    $('#inspector-list').hidden = false;
+    $('#inspector-detail').hidden = true;
+    $('#sel-info').textContent = 'Select a member to inspect';
   }
 }
-try { new EventSource('events').onmessage = () => loadAll(); } catch {}
+
+function setViewMode(mode) {
+  state.mode = mode;
+  $$('[data-view-mode]').forEach(button => button.classList.toggle('active', button.dataset.viewMode === mode));
+  const isModel = mode === 'model';
+  controls.enabled = isModel;
+  sheetControls.enabled = !isModel;
+  $('#model-tools').hidden = !isModel;
+  $('#drawing-tools').hidden = isModel;
+  $('#camera-presets').hidden = !isModel;
+  $('.legend').hidden = !isModel;
+  const segmentCount = state.data?.model.members.reduce((sum, member) => sum + member.segments.length, 0) ?? 0;
+  $('#model-meta').textContent = isModel ? `${state.data?.model.members.length ?? 0} assemblies · ${segmentCount} segments` : (state.data?.project?.drawing_title ?? 'Proposed roof plan');
+  $('#scene-label').textContent = isModel ? '3D MODEL' : '2D DRAWING';
+  $('#scene-units').textContent = isModel ? 'METRES' : (state.data?.project?.drawing_ref ?? '14017/05 REV B');
+  $('#viewport-help').innerHTML = isModel ? 'Drag to orbit <i>·</i> Scroll to zoom <i>·</i> Click a member' : 'Drag to pan <i>·</i> Scroll to zoom <i>·</i> Use fit to reset';
+  if (!isModel && state.dwg) buildSheet(state.dwg);
+  resize();
+}
+
+function fillProject(project) {
+  const set = (selector, value) => { if (value) $(selector).textContent = value; };
+  if (project.short_name) document.title = `Steel Takeoff — ${project.short_name}`;
+  set('#top-job', project.job && `JOB ${project.job}${project.revision ? ' · REV ' + project.revision : ''}`);
+  set('#project-job-no', project.job);
+  set('#project-rev', project.revision ? `REV ${project.revision}` : '');
+  set('#project-name', project.short_name);
+  if (project.package || project.address) $('#project-desc').innerHTML = `${esc(project.package ?? '')}<br>${esc(project.address ?? '')}`;
+  if (project.stock_note) set('#stock-note', project.stock_note);
+}
+
+function fillSummary(data) {
+  $('#kpi-net').innerHTML = `${fmt(data.summary.net_t, 3)} <small>t</small>`;
+  $('#kpi-order').innerHTML = `${fmt(data.summary.order_t, 3)} <small>t</small>`;
+  $('#kpi-quote').textContent = `£${fmt(data.summary.quote_total, 0)}`;
+  $('#kpi-verify').textContent = data.summary.n_to_verify;
+  $('#kpi-waste').textContent = `Includes ${data.quote.procurement.waste_pct}% waste allowance`;
+  $('#review-count').textContent = data.summary.n_to_verify;
+  $('#nav-qa-count').textContent = data.summary.n_to_verify;
+  $('#qa-count').textContent = `${data.summary.n_to_verify} open items`;
+  $('#member-count').textContent = data.members.length;
+  $('#member-mass').textContent = `${fmt(data.summary.member_mass_kg, 1)} kg`;
+  const generated = new Date(data.generated);
+  $('#generated-date').textContent = generated.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function fillSchedule(data) {
+  $('#schedule-count').textContent = `${data.members.length} member marks · ${data.plates.length} plate types`;
+  const members = data.members.map(member => `<tr class="rowmark" data-mark="${esc(member.mark)}"><td><span class="table-mark">${esc(member.mark)}</span></td><td class="mono">${esc(member.section)}<div class="item-description">${esc(member.location)}</div></td><td class="num">${member.qty}</td><td class="num">${fmt(member.length_mm, 0)}</td><td class="num">${fmt(member.kg_m, 1)}</td><td class="num">${fmt(member.mass_kg, 1)}</td><td><span class="pill pill-${member.status}">${member.status}</span></td></tr>`).join('');
+  const plates = data.plates.map(plate => `<tr><td><span class="table-mark">${esc(plate.mark)}</span></td><td>${esc(plate.description)}<div class="item-description">${esc(plate.size)} mm · ${esc(plate.source)}</div></td><td class="num">${plate.qty}</td><td class="num">—</td><td class="num">—</td><td class="num">${fmt(plate.mass_kg, 1)}</td><td><span class="pill pill-${/estimat|not dimensioned|missing/i.test(plate.notes) ? 'ESTIMATED' : 'CONFIRMED'}">PLATE</span></td></tr>`).join('');
+  $('#schedule-table').innerHTML = `<table><thead><tr><th>Mark</th><th>Section / item</th><th class="num">Qty</th><th class="num">Length (mm)</th><th class="num">kg/m</th><th class="num">Mass (kg)</th><th>Status</th></tr></thead><tbody>${members}${plates}</tbody></table>`;
+  $$('#schedule-table .rowmark').forEach(row => row.onclick = () => selectMember(row.dataset.mark));
+}
+
+function fillProcurement(data) {
+  const marks = [...new Set(data.members.map(member => member.mark))];
+  const colour = mark => MARK_PALETTE[marks.indexOf(mark) % MARK_PALETTE.length];
+  const totalOffcut = data.cut_list.reduce((sum, bar) => sum + bar.offcut_mm, 0);
+  $('#stock-count').textContent = `${data.cut_list.length} stock bars`;
+  const bars = data.cut_list.map(bar => {
+    const pieces = bar.pieces.map(piece => `<div class="bar-seg" style="width:${piece.length_mm / bar.stock_mm * 100}%;background:${colour(piece.mark)}" title="${esc(piece.mark)} · ${piece.length_mm} mm">${esc(piece.mark)}</div>`).join('');
+    const offcut = bar.offcut_mm > 0 ? `<div class="bar-offcut" style="width:${bar.offcut_mm / bar.stock_mm * 100}%"></div>` : '';
+    return `<div class="bar-row"><div class="bar-head"><strong>Bar ${bar.bar} · ${esc(bar.section)}</strong><span>${fmt(bar.offcut_mm, 0)} mm offcut</span></div><div class="bar-track">${pieces}${offcut}</div><div class="bar-foot"><span>${bar.pieces.length} pieces</span><span>${fmt(bar.stock_mm / 1000, 1)} m stock</span></div></div>`;
+  }).join('');
+  const fasteners = data.fasteners.map(fastener => `<tr><td>${esc(fastener.description)}</td><td class="num">${fastener.qty}</td></tr>`).join('');
+  $('#procurement-content').innerHTML = `<div class="summary-strip"><div class="summary-box"><span>Stock bars</span><strong>${data.cut_list.length}</strong></div><div class="summary-box"><span>Total offcut</span><strong>${fmt(totalOffcut / 1000)} m</strong></div><div class="summary-box"><span>Order quantity</span><strong>${fmt(data.summary.order_t)} t</strong></div></div><div class="section-heading"><h3>Cutting list</h3><span>First-fit into ${fmt((data.cut_list[0]?.stock_mm ?? 13000) / 1000, 1)} m stock bars</span></div><div class="cut-grid">${bars}</div><div class="section-heading"><h3>Fasteners</h3><span>${data.fasteners.length} item types</span></div><table class="fastener-table"><thead><tr><th>Description</th><th class="num">Quantity</th></tr></thead><tbody>${fasteners}</tbody></table>`;
+}
+
+function fillQuote(data) {
+  const items = data.quote.items.map(item => `<tr><td>${esc(item.item)}</td><td class="num">${item.qty} ${item.unit}</td><td class="num">£${fmt(item.rate)}</td><td class="num">£${fmt(item.total)}</td></tr>`).join('');
+  $('#quote-content').innerHTML = `<section class="quote-main"><div class="panel-heading"><div><span class="eyebrow">COST BUILD-UP</span><h2>Fabrication &amp; erection</h2><p>Illustrative UK fabricator rates.</p></div><div class="window-actions">${data.offer ? '<button class="button button-secondary" id="print-quote"><svg viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg><span>Print / PDF</span></button>' : ''}<span class="panel-badge">GBP</span><button class="window-control" data-collapse-window title="Collapse window" aria-label="Collapse window">−</button></div></div><div class="table-scroll"><table><thead><tr><th>Item</th><th class="num">Quantity</th><th class="num">Rate</th><th class="num">Total</th></tr></thead><tbody>${items}<tr><td>Subtotal</td><td></td><td></td><td class="num">£${fmt(data.quote.subtotal)}</td></tr><tr><td>Overheads &amp; profit · ${data.quote.overhead_profit_pct}%</td><td></td><td></td><td class="num">£${fmt(data.quote.overhead_profit)}</td></tr><tr class="qtotal"><td>Total</td><td></td><td></td><td class="num">£${fmt(data.quote.total)}</td></tr></tbody></table>${offerTerms(data)}</div></section><aside class="quote-side"><span class="quote-total-label">Estimated project total</span><div class="quote-total">£${fmt(data.quote.total)}</div><span class="quote-currency">GBP · including overheads &amp; profit</span><div class="quote-breakdown"><div><span>Net steel</span><strong>${fmt(data.summary.net_t, 3)} t</strong></div><div><span>Order quantity</span><strong>${fmt(data.summary.order_t, 3)} t</strong></div><div><span>Waste allowance</span><strong>${data.quote.procurement.waste_pct}%</strong></div></div><div class="hour-cards"><div class="hour-card"><strong>${data.manhours.fabrication_hours}</strong><span>Fabrication hours</span></div><div class="hour-card"><strong>${data.manhours.erection_hours}</strong><span>Erection hours</span></div></div><p class="quote-disclaimer">These rates are illustrative. Substitute current supplier and fabricator rates before issuing a commercial quote.</p></aside>`;
+  $('#print-quote')?.addEventListener('click', () => window.print());
+}
+
+const CONNECTION_STATUS = { auto: ['check-pass', 'Designed by rules'], 'auto-warning': ['check-warn', 'Designed - check'], provisional: ['check-warn', 'Provisional'], manual: ['check-pass', "Engineer's detail"], resolved: ['check-pass', 'Corner resolved'], skipped: ['check-warn', 'Skipped'], unresolved: ['check-warn', 'Needs detail'], clash: ['check-warn', 'Clash'], warning: ['check-warn', 'Warning'], info: ['check-pass', 'Note'] };
+
+function connectionReport(data) {
+  const rows = (data.connection_report ?? []).map(row => {
+    const [cls, label] = CONNECTION_STATUS[row.status] ?? ['check-warn', row.status];
+    const flagged = row.text.includes('⚠') || cls === 'check-warn';
+    return `<tr${data.connections?.joints.some(joint => joint.id === row.id) ? ` class="rowjoint" data-joint="${esc(row.id)}" title="Zoom to this connection"` : ''}><td><span class="table-mark">${esc(row.id)}</span></td><td><span class="${flagged ? 'check-warn' : cls}">${flagged ? '⚠ ' : '✓ '}${label}</span></td><td>${esc(row.text.replace(/^[^:]+: /, ''))}</td></tr>`;
+  }).join('');
+  return rows ? `<section class="qa-section"><h3>Connections</h3><table><thead><tr><th>Joint</th><th>Status</th><th>Detail</th></tr></thead><tbody>${rows}</tbody></table></section>` : '';
+}
+
+function fillQA(data) {
+  const passed = data.checks.filter(check => check.deviation_pct < 15).length;
+  const issues = data.assumptions.map(assumption => {
+    const member = data.members.find(item => item.mark === assumption.mark);
+    const missing = member?.status === 'MISSING';
+    return `<div class="issue-card ${missing ? 'missing' : ''}" data-mark="${esc(assumption.mark)}" tabindex="0" role="button"><span class="table-mark">${esc(assumption.mark)}</span><div><strong>${missing ? 'Missing dimension' : 'Estimated quantity'} · ${esc(member?.section ?? '')}</strong><p>${esc(assumption.text)}</p></div></div>`;
+  }).join('');
+  const checks = data.checks.map(check => `<tr><td><span class="table-mark">${esc(check.mark)}</span></td><td class="num">${fmt(check.modelled_mm, 0)} mm</td><td class="num">${fmt(check.schedule_mm, 0)} mm</td><td class="num">${fmt(check.deviation_pct, 1)}%</td><td><span class="${check.deviation_pct < 15 ? 'check-pass' : 'check-warn'}">${check.deviation_pct < 15 ? '✓ Within tolerance' : '⚠ Review deviation'}</span></td></tr>`).join('');
+  $('#qa-content').innerHTML = `<div class="summary-strip"><div class="summary-box"><span>Open review items</span><strong>${data.assumptions.length}</strong></div><div class="summary-box"><span>Length checks passing</span><strong>${passed} / ${data.checks.length}</strong></div><div class="summary-box"><span>Source drawings</span><strong>${data.project.drawings.length}</strong></div></div><section class="qa-section"><h3>Assumptions &amp; missing information</h3><div class="issue-list">${issues}</div></section><section class="qa-section"><h3>Model ↔ schedule length cross-check</h3><table><thead><tr><th>Mark</th><th class="num">Modelled</th><th class="num">Scheduled</th><th class="num">Deviation</th><th>Result</th></tr></thead><tbody>${checks}</tbody></table></section>${connectionReport(data)}`;
+  $$('#qa-content [data-joint]').forEach(row => row.onclick = () => focusConnection(row.dataset.joint));
+  $$('#qa-content .issue-card').forEach(card => {
+    card.onclick = () => selectMember(card.dataset.mark);
+    card.onkeydown = event => { if (event.key === 'Enter') selectMember(card.dataset.mark); };
+  });
+}
+
+// Offer terms under the cost build-up on the Quote page; wording comes from the
+// job's "offer" block (job.json), basis lines from the open review items.
+function offerTerms(data) {
+  const offer = data.offer;
+  if (!offer) return '';
+  const project = data.project ?? {};
+  const blank = (value, placeholder) => value ? esc(value) : `<span class="offer-fill">${placeholder}</span>`;
+  const today = new Date();
+  const valid = new Date(today.getTime() + (offer.validity_days ?? 30) * 864e5);
+  const day = d => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  const list = items => items?.length ? `<ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : '<p>None.</p>';
+  const from = offer.from ?? {}, to = offer.to ?? {};
+  const members = data.members.map(m => `${esc(m.mark)} ${esc(m.section)} × ${m.qty} @ ${fmt(m.length_mm / 1000, 2)} m`).join(' · ');
+  const provisional = (offer.provisional ?? []).map(p => `<tr><td>${esc(p.item)}</td><td class="num">${p.amount != null ? '£' + fmt(p.amount) : '<span class="offer-fill">to be priced</span>'}</td></tr>`).join('');
+  // client wording by status; the engineering notes stay on the Quality review page
+  const BASIS = { MEASURED: 'length scaled from the drawings, to be confirmed', ESTIMATED: 'estimated, to be confirmed', MISSING: 'size or dimension not stated on the drawings, priced provisionally' };
+  const basis = data.assumptions.map(a => {
+    const member = data.members.find(m => m.mark === a.mark);
+    const plate = data.plates.find(p => p.mark === a.mark);
+    const what = member ? `${member.section}, ${fmt(member.length_mm, 0)} mm` : plate ? `${plate.description} ${plate.size}` : '';
+    const why = member ? BASIS[member.status] ?? 'to be confirmed' : 'not fully detailed, subject to connection design';
+    return `<li><strong>${esc(a.mark)}</strong> ${esc(what)} — ${why}</li>`;
+  }).join('');
+  return `<div class="quote-terms" contenteditable="true" spellcheck="false">
+    <div class="offer-parties"><div><span class="offer-label">From</span><strong>${blank(from.company, '[Your company]')}</strong><br>${blank(from.contact, '[Contact]')} · ${blank(from.phone, '[Phone]')} · ${blank(from.email, '[Email]')}</div>
+      <div><span class="offer-label">To</span><strong>${blank(to.client, '[Client]')}</strong><br>${to.attn ? `FAO ${esc(to.attn)}` : '<span class="offer-fill">[FAO]</span>'}</div>
+      <div><span class="offer-label">Quotation</span>Ref <strong>${esc(offer.reference ?? `${project.job ?? 'JOB'}-Q01`)}</strong><br>${day(today)} · valid until ${day(valid)}</div></div>
+    <h3>Scope</h3>${list(offer.scope)}<p class="offer-small">${members}</p>
+    <p class="offer-small">Drawings: ${(project.drawings ?? []).map(esc).join(' · ')}. ${esc(offer.vat_note ?? 'Prices exclude VAT.')}</p>
+    ${provisional ? `<h3>Provisional items</h3><table><tbody>${provisional}</tbody></table>` : ''}
+    <h3>Basis of quotation</h3><p>Quantities are taken from the drawings listed. The items below are subject to confirmation and the price will be adjusted to the approved shop drawings.</p><ul>${basis}</ul>
+    <h3>Clarifications required</h3>${list(offer.rfis)}
+    <h3>Exclusions</h3>${list(offer.exclusions)}
+    <h3>Programme &amp; terms</h3><p>${esc(offer.programme ?? '')}</p><p>${esc(offer.terms ?? '')}</p>
+    <div class="offer-sign"><div>For and on behalf of ${blank(from.company, '[Your company]')}<div class="offer-line"></div>Signed / date</div><div>Accepted by ${blank(to.client, '[Client]')}<div class="offer-line"></div>Signed / date</div></div>
+  </div>`;
+}
+
+function bindUI() {
+  const setNavCollapsed = collapsed => {
+    document.body.classList.toggle('nav-collapsed', collapsed);
+    $('#show-nav').hidden = !collapsed;
+  };
+  const setUtilitiesCollapsed = collapsed => {
+    document.body.classList.toggle('utilities-collapsed', collapsed);
+    $('#show-utilities').hidden = !collapsed;
+  };
+  const bindCollapse = (buttonSelector, panelSelector) => {
+    const button = $(buttonSelector);
+    const panel = $(panelSelector);
+    button.onclick = () => {
+      const collapsed = panel.classList.toggle('collapsed');
+      button.textContent = collapsed ? '+' : '−';
+      button.setAttribute('aria-expanded', String(!collapsed));
+    };
+  };
+  $('#collapse-nav').onclick = () => setNavCollapsed(true);
+  $('#show-nav').onclick = () => setNavCollapsed(false);
+  $('#collapse-utilities').onclick = () => setUtilitiesCollapsed(true);
+  $('#show-utilities').onclick = () => setUtilitiesCollapsed(false);
+  bindCollapse('#collapse-kpis', '#kpi-panel');
+  bindCollapse('#collapse-inspector', '#inspector');
+  bindCollapse('#collapse-viewer-tools', '#viewer-toolbar');
+  bindCollapse('#collapse-camera', '#viewer-subbar');
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-collapse-window]');
+    if (!button) return;
+    const collapsed = button.closest('.page').classList.toggle('window-collapsed');
+    button.textContent = collapsed ? '+' : '−';
+    button.setAttribute('aria-expanded', String(!collapsed));
+  });
+  if (innerWidth <= 820) setUtilitiesCollapsed(true);
+  $$('.nav-item').forEach(button => button.onclick = () => showPage(button.dataset.page));
+  $$('[data-go]').forEach(element => {
+    element.addEventListener('click', () => showPage(element.dataset.go));
+    if (element.getAttribute('role') === 'button') element.addEventListener('keydown', event => { if (event.key === 'Enter') showPage(element.dataset.go); });
+  });
+  $$('[data-view-mode]').forEach(button => button.onclick = () => setViewMode(button.dataset.viewMode));
+  $$('[data-display]').forEach(button => button.onclick = () => {
+    state.display = button.dataset.display;
+    $$('[data-display]').forEach(item => item.classList.toggle('active', item === button));
+    updateMaterials();
+  });
+  const layerGroups = { labels: gLabels, connections: gConnections, grid: gGrid, text: gText };
+  $$('[data-layer]').forEach(button => button.onclick = () => {
+    button.classList.toggle('active');
+    layerGroups[button.dataset.layer].visible = button.classList.contains('active');
+  });
+  $$('[data-cam]').forEach(button => button.onclick = () => setCamera(button.dataset.cam));
+  $('#fit-drawing').onclick = fitSheet;
+  $('#member-search').addEventListener('input', renderMemberList);
+  $$('[data-filter]').forEach(button => button.onclick = () => {
+    state.filter = button.dataset.filter;
+    $$('[data-filter]').forEach(item => item.classList.toggle('active', item === button));
+    renderMemberList();
+  });
+  $('#export-data').onclick = () => {
+    if (!state.data) return;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(state.data, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${state.data.project?.job ?? 'job'}_takeoff_${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  bindShortcuts();
+}
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let pointerDown = null;
+renderer.domElement.addEventListener('pointerdown', event => { pointerDown = [event.clientX, event.clientY]; });
+renderer.domElement.addEventListener('pointerup', event => {
+  if (state.mode !== 'model' || !pointerDown || Math.hypot(event.clientX - pointerDown[0], event.clientY - pointerDown[1]) > 5) return;
+  const bounds = renderer.domElement.getBoundingClientRect();
+  pointer.set((event.clientX - bounds.left) / bounds.width * 2 - 1, -(event.clientY - bounds.top) / bounds.height * 2 + 1);
+  raycaster.setFromCamera(pointer, modelCamera);
+  const hit = raycaster.intersectObjects(g3d.children, false)[0];
+  selectMember(hit?.object.userData.mark ?? null);
+});
+
+// --- keyboard shortcuts -----------------------------------------------------------
+// One keymap drives the handler and the F1 cheat sheet. Close to Tekla Structures
+// where a command exists there (Ctrl+P 3D/plane, Home/End zoom original/previous,
+// PgUp/PgDn zoom, Ctrl+arrows rotate, V rotation point, Ctrl+1..5 part and
+// Shift+1..4 component representation, Esc interrupt, Ctrl+B reports, F1 help).
+// "Mod" = Cmd on Mac, Ctrl on Windows. On Mac the Tekla Ctrl+digit keys stay on
+// Control (Cmd+digit switches browser tabs) and rotate uses Option+arrows
+// (Control+arrows switches desktops).
+const IS_MAC = /Mac|iPhone|iPad|iPod/.test(navigator.userAgentData?.platform ?? navigator.platform ?? navigator.userAgent);
+const lastPointer = { x: null, y: null };
+renderer.domElement.addEventListener('pointermove', event => { lastPointer.x = event.clientX; lastPointer.y = event.clientY; });
+controls.addEventListener('start', pushView);
+sheetControls.addEventListener('start', pushView);
+
+function toast(text) {
+  let el = $('#toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast floating';
+    document.body.append(el);
+  }
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => el.classList.remove('show'), 1400);
+}
+
+function activeView() {
+  return state.mode === 'model'
+    ? { camera: modelCamera, controls }
+    : { camera: sheetCamera, controls: sheetControls };
+}
+
+function panView(dx, dy) {
+  cameraAnimation = null;
+  pushView();
+  const { camera, controls: ctl } = activeView();
+  const scale = state.mode === 'model'
+    ? camera.position.distanceTo(ctl.target) * 0.08
+    : (state.sheetViewHeight / camera.zoom) * 0.08;
+  const right = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0).multiplyScalar(dx * scale);
+  const up = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 1).multiplyScalar(dy * scale);
+  camera.position.add(right).add(up);
+  ctl.target.add(right).add(up);
+  ctl.update();
+}
+
+function orbitView(azimuth, elevation) {
+  if (state.mode !== 'model') return;
+  cameraAnimation = null;
+  pushView();
+  const offset = modelCamera.position.clone().sub(controls.target);
+  const spherical = new THREE.Spherical().setFromVector3(offset);
+  spherical.theta += azimuth;
+  spherical.phi = THREE.MathUtils.clamp(spherical.phi - elevation, 0.05, Math.PI - 0.05);
+  modelCamera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+  controls.update();
+}
+
+function zoomView(factor) {
+  cameraAnimation = null;
+  pushView();
+  if (state.mode === 'model') {
+    const offset = modelCamera.position.clone().sub(controls.target);
+    const distance = THREE.MathUtils.clamp(offset.length() * factor, controls.minDistance, controls.maxDistance);
+    modelCamera.position.copy(controls.target).add(offset.setLength(distance));
+    controls.update();
+  } else {
+    sheetCamera.zoom = THREE.MathUtils.clamp(sheetCamera.zoom / factor, sheetControls.minZoom, sheetControls.maxZoom);
+    sheetCamera.updateProjectionMatrix();
+    sheetControls.update();
+  }
+}
+
+function fitView() {
+  if (state.mode === 'model') setCamera('fit'); else { pushView(); fitSheet(); }
+}
+
+function previousView() {
+  const view = viewHistory.pop();
+  if (!view) return toast('No previous view');
+  cameraAnimation = null;
+  if (view.mode !== state.mode) setViewMode(view.mode);
+  const { camera, controls: ctl } = activeView();
+  ctl.target.copy(view.target);
+  camera.position.copy(view.position);
+  if (view.zoom) { camera.zoom = view.zoom; camera.updateProjectionMatrix(); }
+  ctl.update();
+}
+
+function setRotationPoint() {
+  if (state.mode !== 'model') return;
+  let point = null;
+  if (lastPointer.x !== null) {
+    const bounds = renderer.domElement.getBoundingClientRect();
+    pointer.set((lastPointer.x - bounds.left) / bounds.width * 2 - 1, -(lastPointer.y - bounds.top) / bounds.height * 2 + 1);
+    raycaster.setFromCamera(pointer, modelCamera);
+    point = raycaster.intersectObjects([...g3d.children, ...gConnections.children], true)[0]?.point ?? null;
+  }
+  if (!point && state.selected) {
+    const box = new THREE.Box3();
+    for (const mesh of meshesByMark.get(state.selected) ?? []) box.expandByObject(mesh);
+    if (!box.isEmpty()) point = box.getCenter(new THREE.Vector3());
+  }
+  if (!point) return toast('Point at a member to set the rotation point');
+  pushView();
+  controls.target.copy(point);
+  controls.update();
+  toast('Rotation point set');
+}
+
+const RENDER_NAMES = { wireframe: 'Wireframe', shaded: 'Shaded wireframe', grayscale: 'Grayscale', rendered: 'Rendered' };
+function setPartRender(mode) {
+  state.partRender = mode;
+  if (mode === 'grayscale' || mode === 'rendered') {
+    state.display = mode === 'rendered' ? 'status' : 'material';
+    $$('[data-display]').forEach(item => item.classList.toggle('active', item.dataset.display === state.display));
+  }
+  updateMaterials();
+  toast(`Parts: ${RENDER_NAMES[mode]}`);
+}
+
+function setConnectionRender(mode) {
+  for (const [material, colour] of [[PLATE_MATERIAL, '#63736f'], [BOLT_MATERIAL, '#35403c']]) {
+    material.wireframe = mode === 'wireframe';
+    material.transparent = mode === 'shaded';
+    material.opacity = mode === 'shaded' ? 0.3 : 1;
+    material.depthWrite = mode !== 'shaded';
+    material.color.set(mode === 'grayscale' ? '#8d9692' : colour);
+  }
+  toast(`Connections: ${RENDER_NAMES[mode]}`);
+}
+
+function setIsolated(mark) {
+  state.isolated = mark;
+  updateMaterials();
+  gLabels.children.forEach(label => { label.visible = !mark || label.userData.mark === mark; });
+  gConnections.children.forEach(group => { group.visible = !mark || (group.userData.members ?? []).includes(mark); });
+  toast(mark ? `Showing only ${mark}` : 'Showing all members');
+}
+
+function toggleLayer(name) {
+  const button = $(`[data-layer="${name}"]`);
+  if (!button) return;
+  button.click();
+  const layer = button.title.replace(/^Toggle /, '');
+  toast(`${layer[0].toUpperCase()}${layer.slice(1)}: ${button.classList.contains('active') ? 'on' : 'off'}`);
+}
+
+function cycleMember(step) {
+  const marks = [...new Set(state.data?.members.map(member => member.mark) ?? [])];
+  if (!marks.length) return;
+  const index = marks.indexOf(state.selected);
+  selectMember(marks[(index + step + marks.length) % marks.length]);
+}
+
+function reviewItems() {
+  const data = state.data;
+  if (!data) return [];
+  const members = data.assumptions.map(item => ({ kind: 'member', id: item.mark }));
+  const joints = (data.connections?.joints ?? []).filter(joint => joint.auto && joint.warnings?.length).map(joint => ({ kind: 'joint', id: joint.id }));
+  return [...members, ...joints];
+}
+
+function cycleReview(step) {
+  const items = reviewItems();
+  if (!items.length) return toast('No open review items');
+  state.reviewIndex = ((state.reviewIndex ?? -1) + step + items.length) % items.length;
+  const item = items[state.reviewIndex];
+  if (item.kind === 'member') selectMember(item.id); else focusConnection(item.id);
+  toast(`Review ${state.reviewIndex + 1}/${items.length}: ${item.id}`);
+}
+
+function focusSearch() {
+  showPage('model');
+  if (state.selected) selectMember(null, false);
+  document.body.classList.remove('utilities-collapsed');
+  $('#show-utilities').hidden = true;
+  $('#member-search').focus();
+  $('#member-search').select();
+}
+
+function interrupt() {
+  if (!$('#shortcut-help').hidden) return toggleHelp(false);
+  if (document.activeElement?.matches('input, textarea, [contenteditable="true"]')) return document.activeElement.blur();
+  if (state.isolated) return setIsolated(null);
+  if (state.selected) return selectMember(null, false);
+  cameraAnimation = null;
+}
+
+function toggleCollapse(showId, collapseId) {
+  ($(showId).hidden ? $(collapseId) : $(showId)).click();
+}
+
+const PAGES = ['model', 'schedule', 'procurement', 'quote', 'qa'];
+const SHORTCUTS = [
+  // group, keys (string, or {win, mac}), label, action, tekla?
+  ['View', 'Mod+P', 'Switch 3D model / 2D drawing', () => { showPage('model'); setViewMode(state.mode === 'model' ? 'drawing' : 'model'); }, true],
+  ['View', 'Home', 'Fit all (zoom original)', fitView, true],
+  ['View', 'End', 'Previous view (zoom previous)', previousView, true],
+  ['View', 'PageUp', 'Zoom in', () => zoomView(0.8), true],
+  ['View', 'PageDown', 'Zoom out', () => zoomView(1.25), true],
+  ['View', 'ArrowLeft', 'Pan left', () => panView(-1, 0)],
+  ['View', 'ArrowRight', 'Pan right', () => panView(1, 0)],
+  ['View', 'ArrowUp', 'Pan up', () => panView(0, 1)],
+  ['View', 'ArrowDown', 'Pan down', () => panView(0, -1)],
+  ['View', { win: 'Ctrl+ArrowLeft', mac: 'Alt+ArrowLeft' }, 'Rotate left', () => orbitView(-Math.PI / 12, 0), true],
+  ['View', { win: 'Ctrl+ArrowRight', mac: 'Alt+ArrowRight' }, 'Rotate right', () => orbitView(Math.PI / 12, 0), true],
+  ['View', { win: 'Ctrl+ArrowUp', mac: 'Alt+ArrowUp' }, 'Rotate up', () => orbitView(0, Math.PI / 18), true],
+  ['View', { win: 'Ctrl+ArrowDown', mac: 'Alt+ArrowDown' }, 'Rotate down', () => orbitView(0, -Math.PI / 18), true],
+  ['View', 'V', 'Set rotation point under the pointer', setRotationPoint, true],
+  ['View', 'F', 'Fit selected member (or all)', () => (state.mode === 'model' && state.selected ? focusMember(state.selected) : fitView())],
+  ['View', '1', 'Isometric view', () => setCamera('iso')],
+  ['View', '2', 'Top view (plan)', () => setCamera('top')],
+  ['View', '3', 'Front view', () => setCamera('front')],
+  ['View', '4', 'Right view', () => setCamera('right')],
+  ['Representation', 'Ctrl+1', 'Parts: wireframe', () => setPartRender('wireframe'), true],
+  ['Representation', 'Ctrl+2', 'Parts: shaded wireframe', () => setPartRender('shaded'), true],
+  ['Representation', 'Ctrl+3', 'Parts: grayscale (steel)', () => setPartRender('grayscale'), true],
+  ['Representation', 'Ctrl+4', 'Parts: rendered (status colours)', () => setPartRender('rendered'), true],
+  ['Representation', 'Ctrl+5', 'Show only selected (toggle)', () => setIsolated(state.isolated || !state.selected ? null : state.selected), true],
+  ['Representation', 'Shift+1', 'Connections: wireframe', () => setConnectionRender('wireframe'), true],
+  ['Representation', 'Shift+2', 'Connections: shaded wireframe', () => setConnectionRender('shaded'), true],
+  ['Representation', 'Shift+3', 'Connections: grayscale', () => setConnectionRender('grayscale'), true],
+  ['Representation', 'Shift+4', 'Connections: rendered', () => setConnectionRender('rendered'), true],
+  ['Representation', 'L', 'Member labels on/off', () => toggleLayer('labels')],
+  ['Representation', 'C', 'Connections on/off', () => toggleLayer('connections')],
+  ['Representation', 'G', 'Ground grid on/off', () => toggleLayer('grid')],
+  ['Representation', 'T', 'Drawing text on/off', () => toggleLayer('text')],
+  ['Select', 'Escape', 'Interrupt: close, show all, clear selection', interrupt, true],
+  ['Select', 'Tab', 'Next member', () => cycleMember(1)],
+  ['Select', 'Shift+Tab', 'Previous member', () => cycleMember(-1)],
+  ['Select', 'Enter', 'Zoom to selected member', () => state.selected && focusMember(state.selected)],
+  ['Select', 'Shift+I', 'Inquire selected (member card)', () => state.selected ? selectMember(state.selected, false) : toast('Select a member first'), true],
+  ['Select', 'N', 'Next review item', () => cycleReview(1)],
+  ['Select', 'Shift+N', 'Previous review item', () => cycleReview(-1)],
+  ['Select', 'Mod+F', 'Search members', focusSearch],
+  ['Select', '/', 'Search members', focusSearch],
+  ['Workspace', 'Alt+1', '3D workspace', () => showPage('model')],
+  ['Workspace', 'Alt+2', 'Member schedule', () => showPage('schedule')],
+  ['Workspace', 'Alt+3', 'Procurement', () => showPage('procurement')],
+  ['Workspace', 'Alt+4', 'Quote & offer', () => showPage('quote')],
+  ['Workspace', 'Alt+5', 'Quality review', () => showPage('qa')],
+  ['Workspace', 'Mod+B', 'Member schedule (reports)', () => showPage('schedule'), true],
+  ['Workspace', 'Mod+Shift+P', 'Print / save offer as PDF', () => { showPage('quote'); setTimeout(() => window.print(), 50); }],
+  ['Workspace', 'Mod+S', 'Export takeoff data', () => $('#export-data').click(), true],
+  ['Workspace', '[', 'Navigation panel on/off', () => toggleCollapse('#show-nav', '#collapse-nav')],
+  ['Workspace', ']', 'Side panels on/off', () => toggleCollapse('#show-utilities', '#collapse-utilities')],
+  ['Help', 'F1', 'Keyboard shortcuts', () => toggleHelp(), true],
+  ['Help', '?', 'Keyboard shortcuts', () => toggleHelp()],
+].map(([group, keys, label, run, tekla]) => {
+  const spec = typeof keys === 'string' ? keys : IS_MAC ? keys.mac : keys.win;
+  return { group, spec, label, run, tekla: !!tekla, ...parseSpec(spec) };
+});
+
+function parseSpec(spec) {
+  const parts = spec === '+' ? ['+'] : spec.split('+');
+  const key = parts.pop();
+  const mods = new Set(parts);
+  const mod = mods.has('Mod');
+  return {
+    key,
+    meta: mod && IS_MAC, ctrl: (mod && !IS_MAC) || mods.has('Ctrl'),
+    alt: mods.has('Alt'), shift: mods.has('Shift'),
+  };
+}
+
+const KEY_CODES = { '[': 'BracketLeft', ']': 'BracketRight', '/': 'Slash' };
+function matches(shortcut, event) {
+  const { key } = shortcut;
+  let hit;
+  if (key === '?') return event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey;
+  if (/^[A-Z]$/.test(key)) hit = event.code === `Key${key}`;
+  else if (/^\d$/.test(key)) hit = event.code === `Digit${key}`;
+  else if (KEY_CODES[key]) hit = event.code === KEY_CODES[key];
+  else hit = event.key === key;
+  if (!hit || event.altKey !== shortcut.alt || event.shiftKey !== shortcut.shift) return false;
+  if (IS_MAC && shortcut.meta)            // Tekla habit: Control works for Cmd commands on Mac too
+    return (event.metaKey || event.ctrlKey) && !(event.metaKey && event.ctrlKey);
+  return event.metaKey === shortcut.meta && event.ctrlKey === shortcut.ctrl;
+}
+
+const KEY_LABELS = IS_MAC
+  ? { Mod: '⌘', Ctrl: '⌃', Alt: '⌥', Shift: '⇧', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Escape: 'esc', Enter: '↩', Tab: '⇥', PageUp: 'PgUp', PageDown: 'PgDn', Home: 'Home', End: 'End' }
+  : { Mod: 'Ctrl', Ctrl: 'Ctrl', Alt: 'Alt', Shift: 'Shift', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Escape: 'Esc', Enter: 'Enter', Tab: 'Tab', PageUp: 'PgUp', PageDown: 'PgDn' };
+function keyLabel(spec) {
+  const parts = spec.split('+').map(part => KEY_LABELS[part] ?? part);
+  return parts.map(part => `<kbd>${esc(part)}</kbd>`).join(IS_MAC ? '' : '<span class="kbd-plus">+</span>');
+}
+
+function toggleHelp(open) {
+  const help = $('#shortcut-help');
+  const show = open ?? help.hidden;
+  if (show && !help.dataset.built) {
+    const groups = [...new Set(SHORTCUTS.map(item => item.group))];
+    help.querySelector('.shortcut-groups').innerHTML = groups.map(group => `<section><h3>${group}</h3>${SHORTCUTS.filter(item => item.group === group).map(item => `<div class="shortcut-row"><span>${esc(item.label)}${item.tekla ? '<i class="tekla-tag" title="Same as Tekla Structures">Tekla</i>' : ''}</span><span class="shortcut-keys">${keyLabel(item.spec)}</span></div>`).join('')}</section>`).join('');
+    help.querySelector('.shortcut-platform').textContent = IS_MAC
+      ? 'Mac: ⌘ for app commands; Tekla Ctrl+digit keys use ⌃ Control; rotate with ⌥ + arrows.'
+      : 'Windows: Ctrl for commands, as in Tekla Structures.';
+    help.dataset.built = '1';
+  }
+  help.hidden = !show;
+}
+
+function bindShortcuts() {
+  $('#show-shortcuts').onclick = () => toggleHelp();
+  $('#shortcut-help').addEventListener('click', event => { if (event.target.id === 'shortcut-help' || event.target.closest('[data-close-help]')) toggleHelp(false); });
+  addEventListener('keydown', event => {
+    const target = event.target instanceof Element ? event.target : document.body;
+    const typing = target.matches('input, textarea, [contenteditable="true"], [contenteditable=""]');
+    if (typing && event.key !== 'Escape') return;
+    // keep normal keyboard navigation on focused buttons and links
+    if (target.closest('button, a, select, [role="button"]') && ['Enter', ' ', 'Tab'].includes(event.key)) return;
+    if (event.repeat && !/^Arrow|^Page/.test(event.key)) return;
+    const shortcut = SHORTCUTS.find(item => matches(item, event));
+    if (!shortcut) return;
+    if (!$('#shortcut-help').hidden && shortcut.group !== 'Help' && shortcut.run !== interrupt) return;
+    event.preventDefault();
+    shortcut.run();
+  });
+}
+
+async function loadAll() {
+  try {
+    const data = await fetchJSON(BASE + 'app_data.json');
+    state.data = data;
+    // a missing drawing only disables the 2D view, not the whole workspace
+    state.dwg = await fetchJSON(BASE + (data.project?.drawing ?? 'roof_plan.dwg.json.gz')).catch(() => null);
+    fillProject(data.project ?? {});
+    buildModel(data);
+    fillSummary(data);
+    renderMemberList();
+    fillSchedule(data);
+    fillProcurement(data);
+    fillQuote(data);
+    fillQA(data);
+    resize();
+    setCamera('iso');
+    $('#loading').hidden = true;
+  } catch (error) {
+    $('#loading').innerHTML = `<strong>Workspace could not load</strong><small>${esc(error.message)}</small>`;
+  }
+}
+
+bindUI();
 loadAll();
-(function anim() { requestAnimationFrame(anim); if (camAnim) camAnim(); renderer.render(scene, camera); })();
+fetch('manifest.json').then(response => {
+  if (response.ok) new EventSource('events').onmessage = () => location.reload();
+}).catch(() => {});
+function animate() {
+  requestAnimationFrame(animate);
+  if (cameraAnimation && state.mode === 'model') cameraAnimation();
+  if (state.mode === 'model') {
+    controls.update();
+    renderer.render(modelScene, modelCamera);
+  } else {
+    sheetControls.update();
+    renderer.render(sheetScene, sheetCamera);
+  }
+}
+animate();

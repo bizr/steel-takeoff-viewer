@@ -1,6 +1,6 @@
 {
  "format": "takeoff-app/1",
- "generated": "2026-10-30T11:57:18+00:00",
+ "generated": "2026-10-30T17:39:56+00:00",
  "project": {
   "name": "3-4 Bourne Hill Close, London N13 4LX",
   "job": "14017",
@@ -9,7 +9,14 @@
    "14017/05 rev B \u2014 Proposed Roof Plan",
    "14017/08 \u2014 Roof Sections & Details"
   ],
-  "engineer": "Halstead Associates"
+  "engineer": "Halstead Associates",
+  "short_name": "Bourne Hill Close",
+  "address": "London N13 4LX",
+  "revision": "B",
+  "drawing": "roof_plan.dwg.json.gz",
+  "drawing_page": 0,
+  "drawing_title": "Proposed roof plan",
+  "drawing_ref": "14017/05 REV B"
  },
  "summary": {
   "member_mass_kg": 2274.8,
@@ -19,7 +26,7 @@
   "quote_total": 9132.07,
   "currency": "GBP",
   "n_marks": 6,
-  "n_to_verify": 6
+  "n_to_verify": 7
  },
  "members": [
   {
@@ -102,8 +109,8 @@
    "size": "300x350x10",
    "qty": 4,
    "mass_kg": 33.0,
-   "source": "Bearing of 203x203x46 UKC on PC floor",
-   "notes": "Plan on Detail X drg 14017/08"
+   "source": "Plan on Detail X drg 14017/08",
+   "notes": "10thk baseplate, 4No M12 gr 8.8 resin anchors RAWL R-KEM + mesh sleeves"
   },
   {
    "mark": "PL2",
@@ -111,8 +118,8 @@
    "size": "275x300x10",
    "qty": 2,
    "mass_kg": 13.0,
-   "source": "Bearing of 152x152x23 UKC on PC floor",
-   "notes": "Plan on Detail Y drg 14017/08"
+   "source": "Plan on Detail Y drg 14017/08",
+   "notes": "10thk baseplate, 4No M12 gr 8.8 resin anchors"
   },
   {
    "mark": "PL3",
@@ -120,8 +127,8 @@
    "size": "220x260x8",
    "qty": 2,
    "mass_kg": 7.2,
-   "source": "RHS post cap, beams over",
-   "notes": "Plan on Detail W drg 14017/08"
+   "source": "Plan on Detail W drg 14017/08",
+   "notes": "220x260x8thk cap plate, 4No M16 gr 8.8 bolts"
   },
   {
    "mark": "PL4",
@@ -129,8 +136,8 @@
    "size": "200x150x10",
    "qty": 4,
    "mass_kg": 9.4,
-   "source": "Beam ends at Detail W",
-   "notes": "Detail W drg 14017/08"
+   "source": "Detail W drg 14017/08",
+   "notes": "Each beam to have 10thk end plate - size not dimensioned, estimated 200x150"
   }
  ],
  "fasteners": [
@@ -217,8 +224,8 @@
      "length_mm": 11500.0
     }
    ],
-   "offcut_mm": 500.0,
-   "stock_mm": 12000
+   "offcut_mm": 1500.0,
+   "stock_mm": 13000
   },
   {
    "bar": 2,
@@ -229,8 +236,8 @@
      "length_mm": 11500.0
     }
    ],
-   "offcut_mm": 500.0,
-   "stock_mm": 12000
+   "offcut_mm": 1500.0,
+   "stock_mm": 13000
   },
   {
    "bar": 3,
@@ -241,8 +248,8 @@
      "length_mm": 6900.0
     }
    ],
-   "offcut_mm": 5100.0,
-   "stock_mm": 12000
+   "offcut_mm": 6100.0,
+   "stock_mm": 13000
   },
   {
    "bar": 4,
@@ -253,8 +260,8 @@
      "length_mm": 6900.0
     }
    ],
-   "offcut_mm": 5100.0,
-   "stock_mm": 12000
+   "offcut_mm": 6100.0,
+   "stock_mm": 13000
   },
   {
    "bar": 5,
@@ -267,10 +274,14 @@
     {
      "mark": "B3",
      "length_mm": 5530.0
+    },
+    {
+     "mark": "B4",
+     "length_mm": 1500.0
     }
    ],
-   "offcut_mm": 940.0,
-   "stock_mm": 12000
+   "offcut_mm": 440.0,
+   "stock_mm": 13000
   },
   {
    "bar": 6,
@@ -285,8 +296,8 @@
      "length_mm": 4915.0
     }
    ],
-   "offcut_mm": 2170.0,
-   "stock_mm": 12000
+   "offcut_mm": 3170.0,
+   "stock_mm": 13000
   },
   {
    "bar": 7,
@@ -301,8 +312,8 @@
      "length_mm": 2000.0
     }
    ],
-   "offcut_mm": 8000.0,
-   "stock_mm": 12000
+   "offcut_mm": 9000.0,
+   "stock_mm": 13000
   },
   {
    "bar": 8,
@@ -311,14 +322,10 @@
     {
      "mark": "B4",
      "length_mm": 1500.0
-    },
-    {
-     "mark": "B4",
-     "length_mm": 1500.0
     }
    ],
-   "offcut_mm": 9000.0,
-   "stock_mm": 12000
+   "offcut_mm": 11500.0,
+   "stock_mm": 13000
   }
  ],
  "assumptions": [
@@ -345,6 +352,10 @@
   {
    "mark": "P1",
    "text": "POST HEIGHT NOT STATED ON DRAWINGS - 2.0m placeholder; confirm with engineer"
+  },
+  {
+   "mark": "PL4",
+   "text": "Each beam to have 10thk end plate - size not dimensioned, estimated 200x150"
   }
  ],
  "checks": [
@@ -383,6 +394,68 @@
    "modelled_mm": 4000.0,
    "schedule_mm": 4000.0,
    "deviation_pct": 0.0
+  }
+ ],
+ "connection_report": [
+  {
+   "id": "B2/B3/B4/B5",
+   "status": "unresolved",
+   "text": "B2/B3/B4/B5: 4 members meet at (15413, 3487, 0) - node detail required (engineer's J-B3-5D covers part of it)"
+  },
+  {
+   "id": "B2/B4/B5",
+   "status": "unresolved",
+   "text": "B2/B4/B5: 3 members meet at (15413, 14547, 0) - node detail required"
+  },
+  {
+   "id": "B1/B2",
+   "status": "manual",
+   "text": "B1/B2: engineer's detail (J-B1-4D)"
+  },
+  {
+   "id": "B1/B2",
+   "status": "manual",
+   "text": "B1/B2: engineer's detail (J-B1-4F)"
+  },
+  {
+   "id": "P1/B3",
+   "status": "manual",
+   "text": "P1/B3: engineer's detail (J-P1-2E)"
+  },
+  {
+   "id": "P1/B3",
+   "status": "manual",
+   "text": "P1/B3: engineer's detail (J-P1-5E)"
+  },
+  {
+   "id": "B4/B5",
+   "status": "clash",
+   "text": "B4/B5: parallel members overlap 1500 mm - double count or setting out? at (16163, 3487, 0)"
+  },
+  {
+   "id": "B4/B5",
+   "status": "clash",
+   "text": "B4/B5: parallel members overlap 1500 mm - double count or setting out? at (16163, 14547, 0)"
+  },
+  {
+   "id": "B4",
+   "status": "info",
+   "text": "B4: free end at (16913, 3487, 0) - bearing on wall/padstone? not detailed"
+  },
+  {
+   "id": "B4",
+   "status": "info",
+   "text": "B4: free end at (16913, 14547, 0) - bearing on wall/padstone? not detailed"
+  },
+  {
+   "id": "P1",
+   "status": "info",
+   "text": "P1: free end at (3150, 9017, -2000) - bearing on wall/padstone? not detailed"
+  },
+  {
+   "id": "P1",
+   "status": "info",
+   "text": "P1: free end at (15413, 9017, -2000) - bearing on wall/padstone? not detailed"
   }
  ],
  "grids": {
@@ -830,6 +903,14 @@
    "A_cm2": 29.2,
    "Ix_cm4": 1250,
    "Iy_cm4": 400
+  },
+  "90x90x5.0 SHS": {
+   "shape": "RHS",
+   "h": 90.0,
+   "b": 90.0,
+   "t": 5.0,
+   "kg_m": 13.1,
+   "A_cm2": 16.7
   },
   "200x100x6.3 RHS": {
    "shape": "RHS",
