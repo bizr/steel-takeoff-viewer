@@ -1,0 +1,1729 @@
+{
+ "format": "takeoff-app/1",
+ "generated": "2026-10-30T17:39:23+00:00",
+ "project": {
+  "job_id": "33-st-mary-rd",
+  "job": "3225",
+  "revision": "DRAFT",
+  "short_name": "33 St Mary Road",
+  "name": "33 St Mary Rd, London E17 9RF",
+  "address": "London E17 9RF",
+  "package": "Rear extension & loft conversion steelwork",
+  "engineer": "RP Designs (JB)",
+  "drawings": [
+   "3225-S01 Ground floor plan",
+   "3225-S02 First floor plan",
+   "3225-S03 Loft floor plan",
+   "2417-S04 Roof plan",
+   "2417-S05 Details",
+   "2417-S06 Details 2 (moment frame)",
+   "2417-S07 Section",
+   "2417-S08 Notes"
+  ],
+  "drawing": "drawings.dwg.json.gz",
+  "drawing_page": 2,
+  "drawing_title": "Loft floor plan",
+  "drawing_ref": "3225-S03 DRAFT",
+  "stock_note": "Stock optimisation using available 13 m bars and the configured waste allowance."
+ },
+ "summary": {
+  "member_mass_kg": 1349.9,
+  "plate_mass_kg": 98.6,
+  "net_t": 1.449,
+  "order_t": 1.520926672125,
+  "quote_total": 6312.97,
+  "currency": "GBP",
+  "n_marks": 11,
+  "n_to_verify": 18
+ },
+ "members": [
+  {
+   "mark": "GB1",
+   "section": "203x203x46 UKC",
+   "qty": 1,
+   "length_mm": 3700.0,
+   "kg_m": 46.1,
+   "mass_kg": 170.6,
+   "status": "MEASURED",
+   "location": "Picture-frame ground beam, rear wall line, encased in concrete",
+   "source": "3225-S01; 2417-S06/S07",
+   "notes": "Drawn 3539 outer face to outer face of columns; 3700 ordered as stock allowance. S07 label '23UC46' is a typo - S01/S02/S06 all say 203UC46. S355J0 (S08). Mark invented."
+  },
+  {
+   "mark": "FB1",
+   "section": "203x203x46 UKC",
+   "qty": 1,
+   "length_mm": 3700.0,
+   "kg_m": 46.1,
+   "mass_kg": 170.6,
+   "status": "ESTIMATED",
+   "location": "Picture-frame top beam, cranked 21 deg at the F1 junction, end-plated to C1",
+   "source": "3225-S02; 2417-S06",
+   "notes": "Crank at F1 junction (2077 from C2 end); expected ~2077 + ~1371 sloped leg; crank geometry/direction NOT detailed - RFI. Two-piece welded crank (mitre + weld + stiffeners). 3700 ordered. S355J0. Mark invented."
+  },
+  {
+   "mark": "C1",
+   "section": "152x152x37 UKC",
+   "qty": 1,
+   "length_mm": 3050.0,
+   "kg_m": 37.0,
+   "mass_kg": 112.8,
+   "status": "ESTIMATED",
+   "location": "Picture-frame column, south end; FB1 21-deg end plate bolts to its flange",
+   "source": "3225-S01; 2417-S06",
+   "notes": "Not cut by any section (A-A cuts C2; B-B not issued). Column runs to 20 above FB1 top flange (S06): ~2530 if no level change, up to ~3050 if the crank rises - priced worst case, RFI. S355J0."
+  },
+  {
+   "mark": "C2",
+   "section": "152x152x37 UKC",
+   "qty": 1,
+   "length_mm": 2278.0,
+   "kg_m": 37.0,
+   "mass_kg": 84.3,
+   "status": "MEASURED",
+   "location": "Picture-frame column, north end against existing wall",
+   "source": "3225-S01; 2417-S06/S07",
+   "notes": "S07: top of base plate to FB1 soffit 2303 less 25 cap plate = 2278 shaft. S355J0."
+  },
+  {
+   "mark": "F1",
+   "section": "203x203x46 UKC",
+   "qty": 1,
+   "length_mm": 2956.0,
+   "kg_m": 46.1,
+   "mass_kg": 136.3,
+   "status": "ESTIMATED",
+   "location": "First floor, frames into FB1 (west) and L2 (east)",
+   "source": "3225-S02",
+   "notes": "Drawn 3128; cut length set by the rule-based extended fin plates at FB1 and L2 (10 clear of flange tips). Grade not stated: S355J0 per S08. Supersedes the padstone bearing over L2 - engineer to confirm."
+  },
+  {
+   "mark": "S1",
+   "section": "203x203x46 UKC",
+   "qty": 1,
+   "length_mm": 4934.0,
+   "kg_m": 46.1,
+   "mass_kg": 227.5,
+   "status": "MEASURED",
+   "location": "Loft floor, front beam, wall to wall",
+   "source": "3225-S03; 2417-S07",
+   "notes": "Padstone outer face to outer face; bearings ~211 north (party wall - confirm) / ~99 south. S355J0."
+  },
+  {
+   "mark": "S2",
+   "section": "203x203x46 UKC",
+   "qty": 1,
+   "length_mm": 4934.0,
+   "kg_m": 46.1,
+   "mass_kg": 227.5,
+   "status": "MEASURED",
+   "location": "Loft floor, rear beam, wall to wall; carries C3",
+   "source": "3225-S03; 2417-S07",
+   "notes": "Padstone outer face to outer face; bearings ~211 north (party wall - confirm) / ~99 south. S355J0."
+  },
+  {
+   "mark": "C3",
+   "section": "90x90x5.0 SHS",
+   "qty": 1,
+   "length_mm": 2278.0,
+   "kg_m": 13.1,
+   "mass_kg": 29.8,
+   "status": "ESTIMATED",
+   "location": "Loft, stands on S2, props R1 rear end",
+   "source": "3225-S03; 2417-S04/S07",
+   "notes": "S2 top +5287 to R1 soffit +7595 = 2307 less rule-based base (15) and cap (15) plates = 2278. EN 10210 S355J2H hot-finished (S08)."
+  },
+  {
+   "mark": "R1",
+   "section": "152x152x23 UKC",
+   "qty": 1,
+   "length_mm": 4600.0,
+   "kg_m": 23.0,
+   "mass_kg": 105.8,
+   "status": "ESTIMATED",
+   "location": "Ridge beam over S2, front padstone to C3",
+   "source": "2417-S04/S07",
+   "notes": "Drawn 4426 stops 49 short of its 300x100 padstone; padstone outer face to drawn end 4576, order 4600. Rear end on C3. S355J0."
+  },
+  {
+   "mark": "L2",
+   "section": "152x152x23 UKC",
+   "qty": 1,
+   "length_mm": 1945.0,
+   "kg_m": 23.0,
+   "mass_kg": 44.7,
+   "status": "MISSING",
+   "location": "GF lintel, back-addition to main house wall (247 wall)",
+   "source": "3225-S01; 2417-S07",
+   "notes": "SIZE NOT STATED - drawn blue on S01, 152UC-sized I-section on S07. Placeholder 152x152x23; supports F1 via fin plate - RFI size for F1 reaction. Drawn 1945 over 1584 opening."
+  },
+  {
+   "mark": "L3",
+   "section": "152x152x23 UKC",
+   "qty": 1,
+   "length_mm": 1742.0,
+   "kg_m": 23.0,
+   "mass_kg": 40.1,
+   "status": "MISSING",
+   "location": "GF lintel, spine wall under S2 line (157 wall)",
+   "source": "3225-S01; 2417-S07",
+   "notes": "SIZE NOT STATED - drawn blue (steel) on S01 but stippled concrete on S07: may be precast (by others) - RFI. Placeholder 152x152x23, drawn 1742 over 1399 opening."
+  }
+ ],
+ "plates": [
+  {
+   "mark": "PA1",
+   "description": "Detail A cap/base plate",
+   "size": "300x260x25",
+   "qty": 3,
+   "mass_kg": 45.9,
+   "source": "Connection detail A drg 2417-S06",
+   "notes": "Priced 300x260x25 (stated 15 kg) - label says 300x210x25; bolt setting 125 vs 180 conflicts - RFI. S275, 6FW."
+  },
+  {
+   "mark": "PA2",
+   "description": "End plate (opposite top corner)",
+   "size": "258x220x20",
+   "qty": 1,
+   "mass_kg": 8.9,
+   "source": "Detail A opposite TOP side drg 2417-S06",
+   "notes": "As stated, 9 kg. S275; 8 fw flanges, 6 fw web."
+  },
+  {
+   "mark": "ST1",
+   "description": "Web stiffener 10 thk",
+   "size": "181x95x10",
+   "qty": 12,
+   "mass_kg": 16.2,
+   "source": "Detail A drg 2417-S06",
+   "notes": "S275, 7 fw. Qty estimated: reviewers read 2-12 - priced 12, confirm."
+  },
+  {
+   "mark": "ST2",
+   "description": "Crank knee stiffener 10 thk",
+   "size": "181x95x10",
+   "qty": 1,
+   "mass_kg": 1.3,
+   "source": "drg 3225-S02 / 2417-S06",
+   "notes": "Crank not detailed - estimated. The F1-side knee stiffener is replaced by rule-based fin plate FIN1."
+  },
+  {
+   "mark": "FP1",
+   "description": "Beam-to-padstone fixing plate",
+   "size": "370x100x10",
+   "qty": 5,
+   "mass_kg": 14.5,
+   "source": "Typical beam to padstone detail drg 2417-S05",
+   "notes": "Generic detail, not dimensioned - estimated 370x100x10, slotted holes outside flange. +4 if applied to L2/L3."
+  },
+  {
+   "mark": "FIN1",
+   "description": "Extended fin plate (rule-based)",
+   "size": "200x150x8",
+   "qty": 1,
+   "mass_kg": 1.9,
+   "source": "F1/FB1",
+   "notes": "7 FW both sides to FB1 web; S275. Estimated by connection rules - subject to connection design"
+  },
+  {
+   "mark": "FIN2",
+   "description": "Extended fin plate (rule-based)",
+   "size": "175x105x8",
+   "qty": 1,
+   "mass_kg": 1.2,
+   "source": "F1/L2",
+   "notes": "7 FW both sides to L2 web; S275. Estimated by connection rules - subject to connection design"
+  },
+  {
+   "mark": "BASE1",
+   "description": "Base plate (rule-based)",
+   "size": "210x200x15",
+   "qty": 1,
+   "mass_kg": 4.9,
+   "source": "C3/S2",
+   "notes": "6 FW all round C3; S275. Estimated by connection rules - subject to connection design"
+  },
+  {
+   "mark": "CAP1",
+   "description": "Cap plate (rule-based)",
+   "size": "210x150x15",
+   "qty": 1,
+   "mass_kg": 3.7,
+   "source": "C3/R1",
+   "notes": "6 FW all round C3; S275. Estimated by connection rules - subject to connection design"
+  }
+ ],
+ "fasteners": [
+  {
+   "description": "M20 gr 8.8 bolt nut + washers (frame)",
+   "qty": 16,
+   "unit_cost": 3.5,
+   "notes": ""
+  },
+  {
+   "description": "M12 resin anchor (frame columns to wall)",
+   "qty": 32,
+   "unit_cost": 8.0,
+   "notes": "Each-side reading (worst case); 16 if alternating."
+  },
+  {
+   "description": "M20 gr 8.8 through bolt x250 + 50mm plate washers (joist packers)",
+   "qty": 22,
+   "unit_cost": 7.5,
+   "notes": "Web holes shop drilled."
+  },
+  {
+   "description": "M12 bolt (R1 timber plate)",
+   "qty": 12,
+   "unit_cost": 1.5,
+   "notes": "24 if a plate both sides."
+  },
+  {
+   "description": "M12 cast-in bolt (padstone fixing plates)",
+   "qty": 12,
+   "unit_cost": 4.0,
+   "notes": "S05 elevation shows 1 - 2 allowed."
+  },
+  {
+   "description": "M20 x45 gr 8.8 bolt nut + washers (rule-based)",
+   "qty": 2,
+   "unit_cost": 3.5,
+   "notes": "connection rules"
+  },
+  {
+   "description": "M16 x40 gr 8.8 bolt nut + washers (rule-based)",
+   "qty": 2,
+   "unit_cost": 3.0,
+   "notes": "connection rules"
+  },
+  {
+   "description": "M20 x55 gr 8.8 bolt nut + washers (rule-based)",
+   "qty": 8,
+   "unit_cost": 3.5,
+   "notes": "connection rules"
+  }
+ ],
+ "quote": {
+  "currency": "GBP",
+  "items": [
+   {
+    "item": "Material supply",
+    "qty": 1.521,
+    "unit": "t",
+    "rate": 1500.0,
+    "total": 2281.39
+   },
+   {
+    "item": "Fabrication",
+    "qty": 1.449,
+    "unit": "t",
+    "rate": 850.0,
+    "total": 1231.23
+   },
+   {
+    "item": "Surface treatment (primer)",
+    "qty": 1.449,
+    "unit": "t",
+    "rate": 120.0,
+    "total": 173.82
+   },
+   {
+    "item": "Erection",
+    "qty": 1.449,
+    "unit": "t",
+    "rate": 600.0,
+    "total": 869.1
+   },
+   {
+    "item": "Delivery",
+    "qty": 1,
+    "unit": "ls",
+    "rate": 350.0,
+    "total": 350.0
+   },
+   {
+    "item": "Fasteners / resin anchors",
+    "qty": 1,
+    "unit": "ls",
+    "rate": 584.0,
+    "total": 584.0
+   }
+  ],
+  "subtotal": 5489.54,
+  "overhead_profit_pct": 15.0,
+  "overhead_profit": 823.43,
+  "total": 6312.97,
+  "procurement": {
+   "net_t": 1.4485015925,
+   "waste_pct": 5.0,
+   "order_t": 1.520926672125
+  }
+ },
+ "manhours": {
+  "fabrication_hours": 40.6,
+  "erection_hours": 14.5
+ },
+ "cut_list": [
+  {
+   "bar": 1,
+   "section": "203x203x46 UKC",
+   "pieces": [
+    {
+     "mark": "S1",
+     "length_mm": 4934.0
+    },
+    {
+     "mark": "S2",
+     "length_mm": 4934.0
+    },
+    {
+     "mark": "F1",
+     "length_mm": 2956.0
+    }
+   ],
+   "offcut_mm": 176.0,
+   "stock_mm": 13000
+  },
+  {
+   "bar": 2,
+   "section": "152x152x23 UKC",
+   "pieces": [
+    {
+     "mark": "R1",
+     "length_mm": 4600.0
+    },
+    {
+     "mark": "L2",
+     "length_mm": 1945.0
+    },
+    {
+     "mark": "L3",
+     "length_mm": 1742.0
+    }
+   ],
+   "offcut_mm": 4713.0,
+   "stock_mm": 13000
+  },
+  {
+   "bar": 3,
+   "section": "203x203x46 UKC",
+   "pieces": [
+    {
+     "mark": "GB1",
+     "length_mm": 3700.0
+    },
+    {
+     "mark": "FB1",
+     "length_mm": 3700.0
+    }
+   ],
+   "offcut_mm": 5600.0,
+   "stock_mm": 13000
+  },
+  {
+   "bar": 4,
+   "section": "152x152x37 UKC",
+   "pieces": [
+    {
+     "mark": "C1",
+     "length_mm": 3050.0
+    },
+    {
+     "mark": "C2",
+     "length_mm": 2278.0
+    }
+   ],
+   "offcut_mm": 7672.0,
+   "stock_mm": 13000
+  },
+  {
+   "bar": 5,
+   "section": "90x90x5.0 SHS",
+   "pieces": [
+    {
+     "mark": "C3",
+     "length_mm": 2278.0
+    }
+   ],
+   "offcut_mm": 10722.0,
+   "stock_mm": 13000
+  }
+ ],
+ "assumptions": [
+  {
+   "mark": "GB1",
+   "text": "Drawn 3539 outer face to outer face of columns; 3700 ordered as stock allowance. S07 label '23UC46' is a typo - S01/S02/S06 all say 203UC46. S355J0 (S08). Mark invented."
+  },
+  {
+   "mark": "FB1",
+   "text": "Crank at F1 junction (2077 from C2 end); expected ~2077 + ~1371 sloped leg; crank geometry/direction NOT detailed - RFI. Two-piece welded crank (mitre + weld + stiffeners). 3700 ordered. S355J0. Mark invented."
+  },
+  {
+   "mark": "C1",
+   "text": "Not cut by any section (A-A cuts C2; B-B not issued). Column runs to 20 above FB1 top flange (S06): ~2530 if no level change, up to ~3050 if the crank rises - priced worst case, RFI. S355J0."
+  },
+  {
+   "mark": "C2",
+   "text": "S07: top of base plate to FB1 soffit 2303 less 25 cap plate = 2278 shaft. S355J0."
+  },
+  {
+   "mark": "F1",
+   "text": "Drawn 3128; cut length set by the rule-based extended fin plates at FB1 and L2 (10 clear of flange tips). Grade not stated: S355J0 per S08. Supersedes the padstone bearing over L2 - engineer to confirm."
+  },
+  {
+   "mark": "S1",
+   "text": "Padstone outer face to outer face; bearings ~211 north (party wall - confirm) / ~99 south. S355J0."
+  },
+  {
+   "mark": "S2",
+   "text": "Padstone outer face to outer face; bearings ~211 north (party wall - confirm) / ~99 south. S355J0."
+  },
+  {
+   "mark": "C3",
+   "text": "S2 top +5287 to R1 soffit +7595 = 2307 less rule-based base (15) and cap (15) plates = 2278. EN 10210 S355J2H hot-finished (S08)."
+  },
+  {
+   "mark": "R1",
+   "text": "Drawn 4426 stops 49 short of its 300x100 padstone; padstone outer face to drawn end 4576, order 4600. Rear end on C3. S355J0."
+  },
+  {
+   "mark": "L2",
+   "text": "SIZE NOT STATED - drawn blue on S01, 152UC-sized I-section on S07. Placeholder 152x152x23; supports F1 via fin plate - RFI size for F1 reaction. Drawn 1945 over 1584 opening."
+  },
+  {
+   "mark": "L3",
+   "text": "SIZE NOT STATED - drawn blue (steel) on S01 but stippled concrete on S07: may be precast (by others) - RFI. Placeholder 152x152x23, drawn 1742 over 1399 opening."
+  },
+  {
+   "mark": "ST1",
+   "text": "S275, 7 fw. Qty estimated: reviewers read 2-12 - priced 12, confirm."
+  },
+  {
+   "mark": "ST2",
+   "text": "Crank not detailed - estimated. The F1-side knee stiffener is replaced by rule-based fin plate FIN1."
+  },
+  {
+   "mark": "FP1",
+   "text": "Generic detail, not dimensioned - estimated 370x100x10, slotted holes outside flange. +4 if applied to L2/L3."
+  },
+  {
+   "mark": "FIN1",
+   "text": "7 FW both sides to FB1 web; S275. Estimated by connection rules - subject to connection design"
+  },
+  {
+   "mark": "FIN2",
+   "text": "7 FW both sides to L2 web; S275. Estimated by connection rules - subject to connection design"
+  },
+  {
+   "mark": "BASE1",
+   "text": "6 FW all round C3; S275. Estimated by connection rules - subject to connection design"
+  },
+  {
+   "mark": "CAP1",
+   "text": "6 FW all round C3; S275. Estimated by connection rules - subject to connection design"
+  }
+ ],
+ "checks": [
+  {
+   "mark": "GB1",
+   "modelled_mm": 3700.0,
+   "schedule_mm": 3700.0,
+   "deviation_pct": 0.0
+  },
+  {
+   "mark": "C2",
+   "modelled_mm": 2278.0,
+   "schedule_mm": 2278.0,
+   "deviation_pct": 0.0
+  },
+  {
+   "mark": "C1",
+   "modelled_mm": 2526.0,
+   "schedule_mm": 3050.0,
+   "deviation_pct": 17.2
+  },
+  {
+   "mark": "FB1",
+   "modelled_mm": 3460.0,
+   "schedule_mm": 3700.0,
+   "deviation_pct": 6.5
+  },
+  {
+   "mark": "F1",
+   "modelled_mm": 2956.0,
+   "schedule_mm": 2956.0,
+   "deviation_pct": 0.0
+  },
+  {
+   "mark": "L2",
+   "modelled_mm": 1983.0,
+   "schedule_mm": 1945.0,
+   "deviation_pct": 1.9
+  },
+  {
+   "mark": "S2",
+   "modelled_mm": 4934.0,
+   "schedule_mm": 4934.0,
+   "deviation_pct": 0.0
+  },
+  {
+   "mark": "S1",
+   "modelled_mm": 4934.0,
+   "schedule_mm": 4934.0,
+   "deviation_pct": 0.0
+  },
+  {
+   "mark": "C3",
+   "modelled_mm": 2278.0,
+   "schedule_mm": 2278.0,
+   "deviation_pct": 0.0
+  },
+  {
+   "mark": "R1",
+   "modelled_mm": 4576.0,
+   "schedule_mm": 4600.0,
+   "deviation_pct": 0.5
+  },
+  {
+   "mark": "L3",
+   "modelled_mm": 1742.0,
+   "schedule_mm": 1742.0,
+   "deviation_pct": 0.0
+  }
+ ],
+ "connection_report": [
+  {
+   "id": "C2/GB1",
+   "status": "manual",
+   "text": "C2/GB1: engineer's detail (J-C2-base)"
+  },
+  {
+   "id": "C2/FB1",
+   "status": "manual",
+   "text": "C2/FB1: engineer's detail (J-C2-top)"
+  },
+  {
+   "id": "C1/GB1",
+   "status": "manual",
+   "text": "C1/GB1: engineer's detail (J-C1-base)"
+  },
+  {
+   "id": "FB1/C1",
+   "status": "manual",
+   "text": "FB1/C1: engineer's detail (J-C1-top)"
+  },
+  {
+   "id": "L2",
+   "status": "info",
+   "text": "L2: free end at (3154, 1988, 2254) - bearing on wall/padstone? not detailed"
+  },
+  {
+   "id": "L2",
+   "status": "info",
+   "text": "L2: free end at (3154, 3933, 2254) - bearing on wall/padstone? not detailed"
+  },
+  {
+   "id": "L3",
+   "status": "info",
+   "text": "L3: free end at (6679, 2413, 2254) - bearing on wall/padstone? not detailed"
+  },
+  {
+   "id": "L3",
+   "status": "info",
+   "text": "L3: free end at (6679, 4155, 2254) - bearing on wall/padstone? not detailed"
+  },
+  {
+   "id": "F1/FB1",
+   "status": "auto-warning",
+   "text": "F1/FB1: fin plate (extended) | \u26a0 extended plate lever 148 > t/0.15 - plate buckling/LTB check"
+  },
+  {
+   "id": "F1/L2",
+   "status": "provisional",
+   "text": "F1/L2: fin plate (extended) | \u26a0 plate depth 105 < 0.6 x 203 of F1 - engineer to confirm torsional restraint | \u26a0 minimum bolt spacing used (e1 32, p1 40) to fit 105 mm | \u26a0 L2 web 5.8 thick: local shear limit t <= 7.9 < plate 8 - check or thicken | \u26a0 extended plate lever 123 > t/0.15 - plate buckling/LTB check | \u26a0 L2 extended 38 mm to receive F1 | \u26a0 L2 section not confirmed - connection provisional"
+  },
+  {
+   "id": "C3/S2",
+   "status": "auto-warning",
+   "text": "C3/S2: flange plate (base) | \u26a0 base plate and bolt heads on S2 top flange - check the floor build-up"
+  },
+  {
+   "id": "C3/R1",
+   "status": "auto",
+   "text": "C3/R1: flange plate (cap)"
+  }
+ ],
+ "grids": {
+  "x_grids": {
+   "FR": 0,
+   "L2": 3154,
+   "S2": 6679,
+   "S1": 9610
+  },
+  "y_grids": {
+   "G0": 0,
+   "GC2": 79,
+   "GF1": 2077,
+   "GC1": 3461,
+   "G1": 3539
+  },
+  "source": "Measured from vector linework (run_takeoff.py members) on 3225-S01..S04 at 1:50, calibration 1.00. X = front-back from the picture-frame line (rear wall), Y = across the house from the frame's north end. Sheets share X; Y offsets vs S01: S02 -38.8pt, S03 -35.1pt, S04 -8.3pt."
+ },
+ "model": {
+  "members": [
+   {
+    "mark": "GB1",
+    "section": "203x203x46 UKC",
+    "depth_mm": 203.0,
+    "width_mm": 203.0,
+    "kg_m": 46.1,
+    "segments": [
+     {
+      "from": [
+       0.0,
+       -80.0,
+       -351.0
+      ],
+      "to": [
+       0.0,
+       3620.0,
+       -351.0
+      ],
+      "length_mm": 3700.0
+     }
+    ],
+    "status": "MEASURED"
+   },
+   {
+    "mark": "C2",
+    "section": "152x152x37 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 37.0,
+    "segments": [
+     {
+      "from": [
+       0.0,
+       79.0,
+       -108.0
+      ],
+      "to": [
+       0.0,
+       79.0,
+       2170.0
+      ],
+      "length_mm": 2278.0
+     }
+    ],
+    "status": "MEASURED"
+   },
+   {
+    "mark": "C1",
+    "section": "152x152x37 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 37.0,
+    "segments": [
+     {
+      "from": [
+       0.0,
+       3461.0,
+       -108.0
+      ],
+      "to": [
+       0.0,
+       3461.0,
+       2418.0
+      ],
+      "length_mm": 2526.0
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "FB1",
+    "section": "203x203x46 UKC",
+    "depth_mm": 203.0,
+    "width_mm": 203.0,
+    "kg_m": 46.1,
+    "segments": [
+     {
+      "from": [
+       0.0,
+       -80.0,
+       2195.0
+      ],
+      "to": [
+       0.0,
+       3380.0,
+       2195.0
+      ],
+      "length_mm": 3460.0
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "F1",
+    "section": "203x203x46 UKC",
+    "depth_mm": 203.0,
+    "width_mm": 203.0,
+    "kg_m": 46.1,
+    "segments": [
+     {
+      "from": [
+       111.8,
+       2077.0,
+       2195.0
+      ],
+      "to": [
+       3067.9,
+       2077.0,
+       2195.0
+      ],
+      "length_mm": 2956.1
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "L2",
+    "section": "152x152x23 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 23.0,
+    "segments": [
+     {
+      "from": [
+       3154.0,
+       1950.2,
+       2254.0
+      ],
+      "to": [
+       3154.0,
+       3933.0,
+       2254.0
+      ],
+      "length_mm": 1982.8
+     }
+    ],
+    "status": "MISSING"
+   },
+   {
+    "mark": "S2",
+    "section": "203x203x46 UKC",
+    "depth_mm": 203.0,
+    "width_mm": 203.0,
+    "kg_m": 46.1,
+    "segments": [
+     {
+      "from": [
+       6679.0,
+       -211.0,
+       5084.0
+      ],
+      "to": [
+       6679.0,
+       4723.0,
+       5084.0
+      ],
+      "length_mm": 4934.0
+     }
+    ],
+    "status": "MEASURED"
+   },
+   {
+    "mark": "S1",
+    "section": "203x203x46 UKC",
+    "depth_mm": 203.0,
+    "width_mm": 203.0,
+    "kg_m": 46.1,
+    "segments": [
+     {
+      "from": [
+       9610.0,
+       -211.0,
+       5084.0
+      ],
+      "to": [
+       9610.0,
+       4723.0,
+       5084.0
+      ],
+      "length_mm": 4934.0
+     }
+    ],
+    "status": "MEASURED"
+   },
+   {
+    "mark": "C3",
+    "section": "90x90x5.0 SHS",
+    "depth_mm": 90.0,
+    "width_mm": 90.0,
+    "kg_m": 13.1,
+    "segments": [
+     {
+      "from": [
+       6682.0,
+       4268.0,
+       5302.2
+      ],
+      "to": [
+       6682.0,
+       4268.0,
+       7580.0
+      ],
+      "length_mm": 2277.8
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "R1",
+    "section": "152x152x23 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 23.0,
+    "segments": [
+     {
+      "from": [
+       6682.0,
+       -102.0,
+       7595.0
+      ],
+      "to": [
+       6682.0,
+       4474.0,
+       7595.0
+      ],
+      "length_mm": 4576.0
+     }
+    ],
+    "status": "ESTIMATED"
+   },
+   {
+    "mark": "L3",
+    "section": "152x152x23 UKC",
+    "depth_mm": 152.0,
+    "width_mm": 152.0,
+    "kg_m": 23.0,
+    "segments": [
+     {
+      "from": [
+       6679.0,
+       2413.0,
+       2254.0
+      ],
+      "to": [
+       6679.0,
+       4155.0,
+       2254.0
+      ],
+      "length_mm": 1742.0
+     }
+    ],
+    "status": "MISSING"
+   }
+  ]
+ },
+ "offer": {
+  "from": {
+   "company": "",
+   "contact": "",
+   "phone": "",
+   "email": ""
+  },
+  "to": {
+   "client": "",
+   "attn": ""
+  },
+  "reference": "3225-Q01",
+  "validity_days": 30,
+  "vat_note": "Prices exclude VAT.",
+  "scope": [
+   "Supply, fabricate, shop prime, deliver and erect the structural steelwork scheduled below, to RP Designs drawings 3225-S01 to S03 and 2417-S04 to S08 (DRAFT).",
+   "Picture-frame moment frame (encased ground beam, cranked top beam, two columns) with Connection detail A and the 21-degree end plate as drawn on 2417-S06.",
+   "Loft beams S1/S2, first-floor beam F1, ridge beam R1, post C3 and ground-floor lintels L2/L3, with the plates, stiffeners and bolts listed.",
+   "Erection into openings, recesses and onto padstones prepared by others."
+  ],
+  "provisional": [
+   {
+    "item": "Connection design calculations and shop drawings for Engineer approval (S08 note 6)",
+    "amount": null
+   },
+   {
+    "item": "30-minute fire protection to exposed steel (S08) - intumescent, if required in our scope",
+    "amount": null
+   }
+  ],
+  "exclusions": [
+   "Padstones, concrete encasement to the ground beam, foundations and all concrete work.",
+   "Builder's work: recesses, needling, temporary propping and works (S08 note 5), dry packing and making good.",
+   "Timber, joist hangers and restraint straps (30x5 / 30x2.5 straps per S08 and S03/S04 notes).",
+   "Fire protection unless instructed against the provisional sum above.",
+   "Party Wall Act matters, Building Control and Engineer's fees.",
+   "Galvanising (steel is shop primed only)."
+  ],
+  "rfis": [
+   "L2 and L3: section size not stated (L3 drawn blue on S01 but as concrete on S07). Priced as 152x152x23 UC placeholders.",
+   "FB1 crank: location, direction and rise of the 21-degree crank; C1 height depends on it (priced worst case 3.05 m).",
+   "Detail A plate: 300x210x25 (label) or 300x260x25 (stated 15 kg); bolt setting 125 or 180.",
+   "F1 east end: proposed fin plate onto L2 (instead of the padstone over the L2 bearing) - confirm, and size L2 for the F1 reaction.",
+   "S1/S2 north bearings (~211 mm) on the party wall - confirm.",
+   "Column resin anchors: 300 c/c each side of web (priced, 32 no.) or alternating (16 no.).",
+   "F1-to-FB1, F1-to-L2 and C3 cap/base connections are not detailed - designed by our standard connection rules, subject to connection design (S08 note 6).",
+   "R1 timber plate: one side or both (12 or 24 M12 bolts)."
+  ],
+  "programme": "Shop drawings within 5 working days of order; fabrication 2-3 weeks after Engineer approval (5 working days review per S08 note 6); erection approx. 2 days.",
+  "terms": "Payment terms by agreement. Quantities are measured from the drawings issued; drawings state 'do not scale', so lengths are confirmed on site/approved shop drawings before fabrication and the price adjusted for any change."
+ },
+ "sections": {
+  "203x203x46 UKC": {
+   "shape": "I",
+   "h": 203.2,
+   "b": 203.6,
+   "tw": 7.2,
+   "tf": 11.0,
+   "r": 10.2,
+   "kg_m": 46.1,
+   "A_cm2": 58.7,
+   "Ix_cm4": 4568,
+   "Iy_cm4": 1548
+  },
+  "152x152x37 UKC": {
+   "shape": "I",
+   "h": 161.8,
+   "b": 154.4,
+   "tw": 8.0,
+   "tf": 11.5,
+   "r": 7.6,
+   "kg_m": 37.0,
+   "A_cm2": 47.1,
+   "Ix_cm4": 2210,
+   "Iy_cm4": 706
+  },
+  "152x152x30 UKC": {
+   "shape": "I",
+   "h": 157.6,
+   "b": 152.9,
+   "tw": 6.5,
+   "tf": 9.4,
+   "r": 7.6,
+   "kg_m": 30.0,
+   "A_cm2": 38.3,
+   "Ix_cm4": 1748,
+   "Iy_cm4": 560
+  },
+  "152x152x23 UKC": {
+   "shape": "I",
+   "h": 152.4,
+   "b": 152.2,
+   "tw": 5.8,
+   "tf": 6.8,
+   "r": 7.6,
+   "kg_m": 23.0,
+   "A_cm2": 29.2,
+   "Ix_cm4": 1250,
+   "Iy_cm4": 400
+  },
+  "90x90x5.0 SHS": {
+   "shape": "RHS",
+   "h": 90.0,
+   "b": 90.0,
+   "t": 5.0,
+   "kg_m": 13.1,
+   "A_cm2": 16.7
+  },
+  "200x100x6.3 RHS": {
+   "shape": "RHS",
+   "h": 200.0,
+   "b": 100.0,
+   "t": 6.3,
+   "kg_m": 27.9,
+   "A_cm2": 35.5
+  }
+ },
+ "connections": {
+  "comment": "Engineer-detailed joints only (2417-S05/S06). Everything else - F1 to FB1/L2, C3 to S2/R1 - is designed by the connection rules (takeoff/connections.py). Positions [x, y, z_mm] as grid refs / mm. Which top corner is Detail A vs the 21-deg end plate is inferred from the S02 'Cranked' leader (nearer C1) - confirm.",
+  "types": {
+   "PA1": {
+    "kind": "cap_plate",
+    "plate": [
+     260,
+     300,
+     25
+    ],
+    "members": [
+     "C1",
+     "C2",
+     "GB1",
+     "FB1"
+    ],
+    "bolts": {
+     "spec": "M20 gr 8.8 in 22 holes",
+     "dia": 20,
+     "n": 4,
+     "gauge": [
+      45,
+      90
+     ],
+     "length_mm": 70
+    },
+    "desc": "Connection detail A plate 300x210x25, 6FW to column (S06)"
+   },
+   "PA2": {
+    "kind": "end_plate",
+    "plate": [
+     220,
+     258,
+     20
+    ],
+    "members": [
+     "FB1",
+     "C1"
+    ],
+    "beam_h_mm": 203.2,
+    "bolts": {
+     "spec": "M20 gr 8.8 in 22 holes",
+     "dia": 20,
+     "n": 4,
+     "gauge": [
+      45,
+      44
+     ],
+     "length_mm": 65
+    },
+    "desc": "End plate 258x220x20 on 21-deg cut end of FB1 (S06 opposite TOP side)"
+   },
+   "FP1": {
+    "kind": "baseplate",
+    "plate": [
+     370,
+     100,
+     10
+    ],
+    "members": [
+     "S1",
+     "S2",
+     "R1"
+    ],
+    "bolts": {
+     "spec": "M12 cast-in bolt",
+     "dia": 12,
+     "n": 2,
+     "gauge": [
+      147,
+      0
+     ],
+     "embed_mm": 110,
+     "projection_mm": 40
+    },
+    "desc": "Beam-to-padstone fixing plate, slotted holes (S05 typical)"
+   }
+  },
+  "joints": [
+   {
+    "id": "J-C1-base",
+    "type": "PA1",
+    "at": [
+     "FR",
+     "GC1",
+     -108
+    ],
+    "members": [
+     "C1",
+     "GB1"
+    ],
+    "note": "Column base on encased ground beam (Detail A)",
+    "pos_mm": [
+     0.0,
+     3461.0,
+     -108.0
+    ]
+   },
+   {
+    "id": "J-C2-base",
+    "type": "PA1",
+    "at": [
+     "FR",
+     "GC2",
+     -108
+    ],
+    "members": [
+     "C2",
+     "GB1"
+    ],
+    "note": "Column base on encased ground beam (Detail A)",
+    "pos_mm": [
+     0.0,
+     79.0,
+     -108.0
+    ]
+   },
+   {
+    "id": "J-C2-top",
+    "type": "PA1",
+    "at": [
+     "FR",
+     "GC2",
+     2195
+    ],
+    "members": [
+     "C2",
+     "FB1"
+    ],
+    "note": "Cap plate, top beam over (Detail A)",
+    "pos_mm": [
+     0.0,
+     79.0,
+     2195.0
+    ]
+   },
+   {
+    "id": "J-C1-top",
+    "type": "PA2",
+    "at": [
+     "FR",
+     3380,
+     2195
+    ],
+    "members": [
+     "FB1",
+     "C1"
+    ],
+    "note": "21-deg end plate to column flange",
+    "normal": [
+     0,
+     1,
+     0
+    ],
+    "pos_mm": [
+     0.0,
+     3380.0,
+     2195.0
+    ]
+   },
+   {
+    "id": "J-S2-front",
+    "type": "FP1",
+    "at": [
+     "S2",
+     -161,
+     5084
+    ],
+    "members": [
+     "S2"
+    ],
+    "note": "Padstone 600x100x300",
+    "pos_mm": [
+     6679.0,
+     -161.0,
+     5084.0
+    ]
+   },
+   {
+    "id": "J-S2-rear",
+    "type": "FP1",
+    "at": [
+     "S2",
+     4673,
+     5084
+    ],
+    "members": [
+     "S2"
+    ],
+    "note": "Padstone 800x100x400",
+    "pos_mm": [
+     6679.0,
+     4673.0,
+     5084.0
+    ]
+   },
+   {
+    "id": "J-S1-front",
+    "type": "FP1",
+    "at": [
+     "S1",
+     -161,
+     5084
+    ],
+    "members": [
+     "S1"
+    ],
+    "note": "Padstone 500x100x225",
+    "pos_mm": [
+     9610.0,
+     -161.0,
+     5084.0
+    ]
+   },
+   {
+    "id": "J-S1-rear",
+    "type": "FP1",
+    "at": [
+     "S1",
+     4673,
+     5084
+    ],
+    "members": [
+     "S1"
+    ],
+    "note": "Padstone 500x100x225",
+    "pos_mm": [
+     9610.0,
+     4673.0,
+     5084.0
+    ]
+   },
+   {
+    "id": "J-R1-front",
+    "type": "FP1",
+    "at": [
+     6682,
+     -52,
+     7595
+    ],
+    "members": [
+     "R1"
+    ],
+    "note": "Padstone 300x100x215",
+    "pos_mm": [
+     6682.0,
+     -52.0,
+     7595.0
+    ]
+   },
+   {
+    "id": "F1/FB1",
+    "auto": true,
+    "rule": "fin_plate",
+    "variant": "extended",
+    "members": [
+     "F1",
+     "FB1"
+    ],
+    "note": "plate thinned to 8 to suit FB1 web (7.2 thick); Extended fin plate 200x150x8 S275 welded to FB1 web, 2 M20 8.8 at 70 c/c through F1 web (22 holes), F1 end 10 clear of flange tips",
+    "warnings": [
+     "extended plate lever 148 > t/0.15 - plate buckling/LTB check"
+    ],
+    "plates": [
+     {
+      "desc": "Extended fin plate",
+      "L": 200,
+      "W": 150,
+      "t": 8,
+      "weld": "7 FW both sides to FB1 web"
+     }
+    ],
+    "bolts": {
+     "M20 x45": 2
+    },
+    "holes": [
+     {
+      "member": "F1",
+      "n": 2,
+      "d0": 22,
+      "where": "web"
+     }
+    ],
+    "parts": [
+     {
+      "center": [
+       103.6,
+       2069.4,
+       2296.6
+      ],
+      "size": [
+       200,
+       150,
+       8
+      ],
+      "u": [
+       1.0,
+       0.0,
+       0.0
+      ],
+      "v": [
+       0,
+       0,
+       1
+      ]
+     }
+    ],
+    "bolt_parts": [
+     {
+      "at": [
+       151.8,
+       2073.0,
+       2261.6
+      ],
+      "dir": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "dia": 20,
+      "length": 45
+     },
+     {
+      "at": [
+       151.8,
+       2073.0,
+       2331.6
+      ],
+      "dir": [
+       0.0,
+       -1.0,
+       0.0
+      ],
+      "dia": 20,
+      "length": 45
+     }
+    ],
+    "pos_mm": [
+     103.6,
+     2069.4,
+     2296.6
+    ]
+   },
+   {
+    "id": "F1/L2",
+    "auto": true,
+    "rule": "fin_plate",
+    "variant": "extended",
+    "members": [
+     "F1",
+     "L2"
+    ],
+    "note": "Extended fin plate 175x105x8 S275 welded to L2 web, 2 M16 8.8 at 40 c/c through F1 web (18 holes), F1 end 10 clear of flange tips; corner F1/L2: F1 framed into L2 (standards pair); override with pairs \"L2/F1\"",
+    "warnings": [
+     "plate depth 105 < 0.6 x 203 of F1 - engineer to confirm torsional restraint",
+     "minimum bolt spacing used (e1 32, p1 40) to fit 105 mm",
+     "L2 web 5.8 thick: local shear limit t <= 7.9 < plate 8 - check or thicken",
+     "extended plate lever 123 > t/0.15 - plate buckling/LTB check",
+     "L2 extended 38 mm to receive F1",
+     "L2 section not confirmed - connection provisional"
+    ],
+    "plates": [
+     {
+      "desc": "Extended fin plate",
+      "L": 175,
+      "W": 105,
+      "t": 8,
+      "weld": "7 FW both sides to L2 web"
+     }
+    ],
+    "bolts": {
+     "M16 x40": 2
+    },
+    "holes": [
+     {
+      "member": "F1",
+      "n": 2,
+      "d0": 18,
+      "where": "web"
+     }
+    ],
+    "parts": [
+     {
+      "center": [
+       3063.6,
+       2084.6,
+       2322.7
+      ],
+      "size": [
+       175,
+       105,
+       8
+      ],
+      "u": [
+       -1.0,
+       0.0,
+       0.0
+      ],
+      "v": [
+       0,
+       0,
+       1
+      ]
+     }
+    ],
+    "bolt_parts": [
+     {
+      "at": [
+       3027.9,
+       2081.0,
+       2302.7
+      ],
+      "dir": [
+       0.0,
+       1.0,
+       -0.0
+      ],
+      "dia": 16,
+      "length": 40
+     },
+     {
+      "at": [
+       3027.9,
+       2081.0,
+       2342.7
+      ],
+      "dir": [
+       0.0,
+       1.0,
+       -0.0
+      ],
+      "dia": 16,
+      "length": 40
+     }
+    ],
+    "pos_mm": [
+     3063.6,
+     2084.6,
+     2322.7
+    ]
+   },
+   {
+    "id": "C3/S2",
+    "auto": true,
+    "rule": "flange_plate",
+    "variant": "base",
+    "members": [
+     "C3",
+     "S2"
+    ],
+    "note": "Base plate 210x200x15 S275 on C3, 4 M20 8.8 at 140 cross-centres x 150 through S2 top flange",
+    "warnings": [
+     "base plate and bolt heads on S2 top flange - check the floor build-up"
+    ],
+    "plates": [
+     {
+      "desc": "Base plate",
+      "L": 210,
+      "W": 200,
+      "t": 15,
+      "weld": "6 FW all round C3"
+     }
+    ],
+    "bolts": {
+     "M20 x55": 4
+    },
+    "holes": [
+     {
+      "member": "S2",
+      "n": 4,
+      "d0": 22,
+      "where": "top flange"
+     }
+    ],
+    "parts": [
+     {
+      "center": [
+       6679.0,
+       4268.0,
+       5294.7
+      ],
+      "size": [
+       210,
+       200,
+       15
+      ],
+      "u": [
+       0.0,
+       1.0,
+       0.0
+      ],
+      "v": [
+       -1.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "bolt_parts": [
+     {
+      "at": [
+       6749.0,
+       4193.0,
+       5289.2
+      ],
+      "dir": [
+       0,
+       0,
+       1
+      ],
+      "dia": 20,
+      "length": 55
+     },
+     {
+      "at": [
+       6609.0,
+       4193.0,
+       5289.2
+      ],
+      "dir": [
+       0,
+       0,
+       1
+      ],
+      "dia": 20,
+      "length": 55
+     },
+     {
+      "at": [
+       6749.0,
+       4343.0,
+       5289.2
+      ],
+      "dir": [
+       0,
+       0,
+       1
+      ],
+      "dia": 20,
+      "length": 55
+     },
+     {
+      "at": [
+       6609.0,
+       4343.0,
+       5289.2
+      ],
+      "dir": [
+       0,
+       0,
+       1
+      ],
+      "dia": 20,
+      "length": 55
+     }
+    ],
+    "pos_mm": [
+     6679.0,
+     4268.0,
+     5294.7
+    ]
+   },
+   {
+    "id": "C3/R1",
+    "auto": true,
+    "rule": "flange_plate",
+    "variant": "cap",
+    "members": [
+     "C3",
+     "R1"
+    ],
+    "note": "Cap plate 210x150x15 S275 on C3, 4 M20 8.8 at 90 cross-centres x 150 through R1 bottom flange",
+    "warnings": [],
+    "plates": [
+     {
+      "desc": "Cap plate",
+      "L": 210,
+      "W": 150,
+      "t": 15,
+      "weld": "6 FW all round C3"
+     }
+    ],
+    "bolts": {
+     "M20 x55": 4
+    },
+    "holes": [
+     {
+      "member": "R1",
+      "n": 4,
+      "d0": 22,
+      "where": "bottom flange"
+     }
+    ],
+    "parts": [
+     {
+      "center": [
+       6682.0,
+       4268.0,
+       7587.5
+      ],
+      "size": [
+       210,
+       150,
+       15
+      ],
+      "u": [
+       0.0,
+       1.0,
+       0.0
+      ],
+      "v": [
+       -1.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "bolt_parts": [
+     {
+      "at": [
+       6727.0,
+       4193.0,
+       7590.9
+      ],
+      "dir": [
+       0,
+       0,
+       1
+      ],
+      "dia": 20,
+      "length": 55
+     },
+     {
+      "at": [
+       6637.0,
+       4193.0,
+       7590.9
+      ],
+      "dir": [
+       0,
+       0,
+       1
+      ],
+      "dia": 20,
+      "length": 55
+     },
+     {
+      "at": [
+       6727.0,
+       4343.0,
+       7590.9
+      ],
+      "dir": [
+       0,
+       0,
+       1
+      ],
+      "dia": 20,
+      "length": 55
+     },
+     {
+      "at": [
+       6637.0,
+       4343.0,
+       7590.9
+      ],
+      "dir": [
+       0,
+       0,
+       1
+      ],
+      "dia": 20,
+      "length": 55
+     }
+    ],
+    "pos_mm": [
+     6682.0,
+     4268.0,
+     7587.5
+    ]
+   }
+  ]
+ }
+}
