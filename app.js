@@ -13,7 +13,7 @@ const PAGE_COPY = {
 // ?job=<id> loads output/<id>/; no job = the original output/ (14017)
 const JOB = new URLSearchParams(location.search).get('job');
 const BASE = JOB ? `data/output/${encodeURIComponent(JOB)}/` : 'data/output/';
-const state = { data: null, dwg: null, selected: null, mode: 'model', display: 'material', filter: 'all', sheetBuilt: false, sheetViewHeight: 1000, visibleFraction: [1, 1] };
+const state = { data: null, dwg: null, selected: null, mode: 'model', display: 'material', filter: 'all', sheets: new Map(), sheetPage: 0, sheetViewHeight: 1000, visibleFraction: [1, 1] };
 const meshesByMark = new Map();
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -168,9 +168,62 @@ async function fetchJSON(url) {
 
 const col3 = (value, fallback = '#202522') => value ? new THREE.Color(value[0], value[1], value[2]) : new THREE.Color(fallback);
 
-function buildSheet(dwg) {
-  if (state.sheetBuilt) return;
-  const page = dwg.pages[state.data?.project?.drawing_page ?? 0];
+// Ref and title of a sheet: from project.drawings when it lists every page
+// ("3225-S01 Ground floor plan"), else the configured drawing, else its number.
+function sheetInfo(index = state.sheetPage) {
+  const project = state.data?.project ?? {};
+  const count = state.dwg?.pages.length ?? 1;
+  const name = project.drawings?.length === count ? project.drawings[index] : null;
+  if (name) {
+    const [ref, ...title] = name.split(' ');
+    return { ref, title: title.join(' ') || ref, label: name };
+  }
+  if (index === (project.drawing_page ?? 0)) {
+    const ref = project.drawing_ref ?? '14017/05 REV B', title = project.drawing_title ?? 'Proposed roof plan';
+    return { ref, title, label: `${ref} ${title}` };
+  }
+  return { ref: `SHEET ${index + 1}`, title: `Sheet ${index + 1} of ${count}`, label: `Sheet ${index + 1}` };
+}
+
+// Each sheet is built once into its own groups; switching only toggles visibility.
+function showSheet(index) {
+  if (!state.dwg) return;
+  const count = state.dwg.pages.length;
+  index = (index + count) % count;
+  state.sheetPage = index;
+  if (!state.sheets.has(index)) state.sheets.set(index, buildSheet(state.dwg.pages[index]));
+  for (const [key, sheet] of state.sheets) sheet.lines.visible = sheet.text.visible = key === index;
+  state.sheetBounds = state.sheets.get(index).bounds;
+  $('#sheet-select').value = String(index);
+  const info = sheetInfo(index);
+  if (state.mode === 'drawing') {
+    $('#model-meta').textContent = info.title;
+    $('#scene-units').textContent = info.ref;
+  }
+  fitSheet();
+}
+
+function stepSheet(step) {
+  if (!state.dwg) return;
+  showPage('model');
+  if (state.mode !== 'drawing') setViewMode('drawing');
+  if (state.dwg.pages.length < 2) return toast('This job has one drawing sheet');
+  showSheet(state.sheetPage + step);
+  toast(`Sheet ${state.sheetPage + 1}/${state.dwg.pages.length}: ${sheetInfo().label}`);
+}
+
+function fillSheetPicker() {
+  const count = state.dwg?.pages.length ?? 0;
+  $('#sheet-picker').hidden = count < 2;
+  $('#sheet-select').innerHTML = Array.from({ length: count }, (_, index) => `<option value="${index}">${index + 1} · ${esc(sheetInfo(index).label)}</option>`).join('');
+  $('#sheet-select').value = String(state.sheetPage);
+}
+
+function buildSheet(page) {
+  const sheetGroup = new THREE.Group();
+  const textGroup = new THREE.Group();
+  gSheet.add(sheetGroup);
+  gText.add(textGroup);
   // dwg.json keeps unrotated PDF coords; map them to display orientation (/Rotate)
   const M = page.rotation_matrix ?? [1, 0, 0, 1, 0, 0];
   const T = p => [M[0] * p[0] + M[2] * p[1] + M[4], M[1] * p[0] + M[3] * p[1] + M[5]];
@@ -249,19 +302,19 @@ function buildSheet(dwg) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
-  gSheet.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.82 })));
+  sheetGroup.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.82 })));
   for (const bucket of fillBuckets.values()) {
     const fillGeometry = new THREE.BufferGeometry();
     fillGeometry.setAttribute('position', new THREE.Float32BufferAttribute(bucket.positions, 3));
     fillGeometry.setIndex(bucket.indices);
     const mesh = new THREE.Mesh(fillGeometry, new THREE.MeshBasicMaterial({ color: bucket.color, side: THREE.DoubleSide }));
     mesh.position.z = -0.1;
-    gSheet.add(mesh);
+    sheetGroup.add(mesh);
   }
   const centerX = (minX + maxX) / 2, centerY = -(minY + maxY) / 2;
   const paper = new THREE.Mesh(new THREE.PlaneGeometry(maxX - minX + 50, maxY - minY + 50), new THREE.MeshBasicMaterial({ color: '#fbfaf5' }));
   paper.position.set(centerX, centerY, -1);
-  gSheet.add(paper);
+  sheetGroup.add(paper);
   for (const span of page.text.slice(0, 3000)) {
     const canvas = document.createElement('canvas');
     const fontSize = 48;
@@ -279,23 +332,50 @@ function buildSheet(dwg) {
     const dir = span.dir ? [M[0] * span.dir[0] + M[2] * span.dir[1], M[1] * span.dir[0] + M[3] * span.dir[1]] : [1, 0];
     sprite.position.set(origin[0], -origin[1], 0.5);
     sprite.material.rotation = Math.atan2(-dir[1], dir[0]);
-    gText.add(sprite);
+    textGroup.add(sprite);
   }
-  state.sheetBounds = { minX, maxX, minY: -maxY, maxY: -minY, centerX, centerY };
-  state.sheetBuilt = true;
-  fitSheet();
+  return { lines: sheetGroup, text: textGroup, bounds: { minX, maxX, minY: -maxY, maxY: -minY, centerX, centerY } };
 }
 
+// Part of the canvas not covered by the floating bars and panels, in canvas pixels.
+function freeRect() {
+  const width = viewport.clientWidth, height = viewport.clientHeight, gap = 8;
+  const box = selector => {
+    const rect = $(selector)?.getBoundingClientRect();
+    return rect?.width && rect.height ? rect : null;
+  };
+  let left = 0, right = width, top = 0, bottom = height;
+  for (const selector of ['.topbar', '#viewer-toolbar']) {
+    const rect = box(selector);
+    if (rect) top = Math.max(top, rect.bottom + gap);
+  }
+  const nav = box('#sidebar');                      // left column, or the bottom tab bar
+  if (nav && nav.width < width / 2) left = nav.right + gap;
+  else if (nav) bottom = Math.min(bottom, nav.top - gap);
+  const rail = box('#utility-rail');                // right column, or the phone bottom sheet
+  if (rail && rail.width > width * 0.7) bottom = Math.min(bottom, rail.top - gap);
+  else if (rail) right = Math.min(right, rail.left - gap);
+  for (const selector of ['#viewer-subbar', '.viewer-status', '.content-footer']) {
+    const rect = box(selector);
+    if (rect && rect.top > height / 2) bottom = Math.min(bottom, rect.top - gap);
+  }
+  return { left, right, top, bottom };
+}
+
+// Fit the sheet into the free part of the canvas, not behind the panels.
 function fitSheet() {
   if (!state.sheetBounds) return;
   const bounds = state.sheetBounds;
-  const width = bounds.maxX - bounds.minX;
-  const height = bounds.maxY - bounds.minY;
-  const viewportAspect = Math.max(viewport.clientWidth, 1) / Math.max(viewport.clientHeight, 1);
-  state.sheetViewHeight = Math.max(height, width / viewportAspect) * 1.12;
+  const width = Math.max(viewport.clientWidth, 1), height = Math.max(viewport.clientHeight, 1);
+  const free = freeRect();
+  const freeWidth = Math.max(free.right - free.left, width * 0.3), freeHeight = Math.max(free.bottom - free.top, height * 0.3);
+  const unit = Math.max((bounds.maxX - bounds.minX) / freeWidth, (bounds.maxY - bounds.minY) / freeHeight) * 1.04;   // sheet units per pixel
+  state.sheetViewHeight = unit * height;
+  const x = bounds.centerX - ((free.left + free.right) / 2 - width / 2) * unit;
+  const y = bounds.centerY + ((free.top + free.bottom) / 2 - height / 2) * unit;
   sheetCamera.zoom = 1;
-  sheetCamera.position.set(bounds.centerX, bounds.centerY, 1000);
-  sheetControls.target.set(bounds.centerX, bounds.centerY, 0);
+  sheetCamera.position.set(x, y, 1000);
+  sheetControls.target.set(x, y, 0);
   sheetControls.update();
   resize();
 }
@@ -717,11 +797,11 @@ function setViewMode(mode) {
   $('#camera-presets').hidden = !isModel;
   $('.legend').hidden = !isModel;
   const segmentCount = state.data?.model.members.reduce((sum, member) => sum + member.segments.length, 0) ?? 0;
-  $('#model-meta').textContent = isModel ? `${state.data?.model.members.length ?? 0} assemblies · ${segmentCount} segments` : (state.data?.project?.drawing_title ?? 'Proposed roof plan');
+  $('#model-meta').textContent = isModel ? `${state.data?.model.members.length ?? 0} assemblies · ${segmentCount} segments` : sheetInfo().title;
   $('#scene-label').textContent = isModel ? '3D MODEL' : '2D DRAWING';
-  $('#scene-units').textContent = isModel ? 'METRES' : (state.data?.project?.drawing_ref ?? '14017/05 REV B');
+  $('#scene-units').textContent = isModel ? 'METRES' : sheetInfo().ref;
   $('#viewport-help').innerHTML = viewportHelp(isModel);
-  if (!isModel && state.dwg) buildSheet(state.dwg);
+  if (!isModel && state.dwg && !state.sheets.has(state.sheetPage)) showSheet(state.sheetPage);
   resize();
 }
 
@@ -894,6 +974,8 @@ function bindUI() {
   });
   $$('[data-cam]').forEach(button => button.onclick = () => setCamera(button.dataset.cam));
   $('#fit-drawing').onclick = fitSheet;
+  $('#sheet-select').onchange = event => showSheet(Number(event.target.value));
+  $$('[data-sheet-step]').forEach(button => button.onclick = () => stepSheet(Number(button.dataset.sheetStep)));
   $('#member-search').addEventListener('input', renderMemberList);
   $$('[data-filter]').forEach(button => button.onclick = () => {
     state.filter = button.dataset.filter;
@@ -1138,6 +1220,8 @@ const SHORTCUTS = [
   ['View', { win: 'Ctrl+ArrowUp', mac: 'Alt+ArrowUp' }, 'Rotate up', () => orbitView(0, Math.PI / 18), true],
   ['View', { win: 'Ctrl+ArrowDown', mac: 'Alt+ArrowDown' }, 'Rotate down', () => orbitView(0, -Math.PI / 18), true],
   ['View', 'V', 'Set rotation point under the pointer', setRotationPoint, true],
+  ['View', 'Shift+PageUp', 'Previous drawing sheet (2D)', () => stepSheet(-1)],
+  ['View', 'Shift+PageDown', 'Next drawing sheet (2D)', () => stepSheet(1)],
   ['View', 'F', 'Fit selected member (or all)', () => (state.mode === 'model' && state.selected ? focusMember(state.selected) : fitView())],
   ['View', '1', 'Isometric view', () => setCamera('iso')],
   ['View', '2', 'Top view (plan)', () => setCamera('top')],
@@ -1236,7 +1320,7 @@ function bindShortcuts() {
   $('#shortcut-help').addEventListener('click', event => { if (event.target.id === 'shortcut-help' || event.target.closest('[data-close-help]')) toggleHelp(false); });
   addEventListener('keydown', event => {
     const target = event.target instanceof Element ? event.target : document.body;
-    const typing = target.matches('input, textarea, [contenteditable="true"], [contenteditable=""]');
+    const typing = target.matches('input, textarea, select, [contenteditable="true"], [contenteditable=""]');
     if (typing && event.key !== 'Escape') return;
     // keep normal keyboard navigation on focused buttons and links
     if (target.closest('button, a, select, [role="button"]') && ['Enter', ' ', 'Tab'].includes(event.key)) return;
@@ -1256,6 +1340,8 @@ async function loadAll() {
     // a missing drawing only disables the 2D view, not the whole workspace
     state.dwg = await fetchJSON(BASE + (data.project?.drawing ?? 'roof_plan.dwg.json.gz')).catch(() => null);
     fillProject(data.project ?? {});
+    state.sheetPage = Math.min(data.project?.drawing_page ?? 0, (state.dwg?.pages.length ?? 1) - 1);
+    fillSheetPicker();
     buildModel(data);
     fillSummary(data);
     renderMemberList();

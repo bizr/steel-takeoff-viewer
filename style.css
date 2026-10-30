@@ -140,6 +140,10 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .segmented button, .display-switch button { border: 0; background: transparent; padding: 5px 9px; border-radius: 4px; font-size: 9px; color: var(--ink-soft); cursor: pointer; white-space: nowrap; }
 .segmented button.active, .display-switch button.active { color: var(--ink); background: #fff; font-weight: 650; box-shadow: 0 1px 3px #17211f16; }
 .viewer-tools { display: flex; align-items: center; gap: 3px; }
+.sheet-picker { display: flex; align-items: center; gap: 2px; }
+.sheet-picker select { max-width: 230px; height: 27px; padding: 0 22px 0 8px; border: 1px solid var(--line); border-radius: 5px; background: #fafbf9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b8783' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 6px center / 11px; color: var(--ink); font-size: 9.5px; font-weight: 600; text-overflow: ellipsis; appearance: none; cursor: pointer; }
+.sheet-picker select:hover { border-color: #bfc8c2; }
+.sheet-picker[hidden] + .tool-divider { display: none; }
 .tool-divider { height: 17px; width: 1px; background: var(--line); margin: 0 3px; }
 .icon-button { width: 27px; height: 27px; padding: 0; display: grid; place-items: center; background: transparent; color: #89948f; border: 1px solid transparent; border-radius: 5px; cursor: pointer; }
 .icon-button svg { width: 14px; height: 14px; }
@@ -315,6 +319,7 @@ body.utilities-collapsed .utility-rail { display: none; }
   button, [role="button"], .member-row { touch-action: manipulation; }
   .search-box { padding: 8px 10px; }.search-box input { font-size: 16px; }
   .icon-button { width: 36px; height: 36px; }.icon-button svg { width: 17px; height: 17px; }
+  .sheet-picker select { height: 36px; font-size: 16px; padding-left: 10px; }
   .window-control { width: 32px; height: 32px; font-size: 16px; }
   .segmented button, .display-switch button { padding: 8px 12px; font-size: 12px; }
   .camera-presets button { padding: 8px 10px; font-size: 12px; }
@@ -387,6 +392,7 @@ body.utilities-collapsed .utility-rail { display: none; }
   .segmented .long, .top-actions .button > span { display: none; }
   .top-actions .button { padding: 9px; }
   .viewer-toolbar { gap: 6px; padding: 5px; }.display-switch button { padding: 8px 10px; }
+  .sheet-picker [data-sheet-step], #drawing-tools .tool-divider { display: none; }.sheet-picker select { max-width: 170px; }
   .viewport-badge, body.nav-collapsed .viewport-badge { display: none; }
   body:not(.utilities-collapsed) .viewer-subbar { right: 0; }
   .utility-rail { top: auto; left: var(--gap); width: auto; height: min(56dvh, 520px); gap: 8px; }
