@@ -1,6 +1,6 @@
 {
  "format": "takeoff-app/1",
- "generated": "2026-10-30T10:40:41+00:00",
+ "generated": "2026-10-30T11:57:18+00:00",
  "project": {
   "name": "3-4 Bourne Hill Close, London N13 4LX",
   "job": "14017",
@@ -781,5 +781,357 @@
    },
    "dpi": 150
   }
+ },
+ "sections": {
+  "203x203x46 UKC": {
+   "shape": "I",
+   "h": 203.2,
+   "b": 203.6,
+   "tw": 7.2,
+   "tf": 11.0,
+   "r": 10.2,
+   "kg_m": 46.1,
+   "A_cm2": 58.7,
+   "Ix_cm4": 4568,
+   "Iy_cm4": 1548
+  },
+  "152x152x37 UKC": {
+   "shape": "I",
+   "h": 161.8,
+   "b": 154.4,
+   "tw": 8.0,
+   "tf": 11.5,
+   "r": 7.6,
+   "kg_m": 37.0,
+   "A_cm2": 47.1,
+   "Ix_cm4": 2210,
+   "Iy_cm4": 706
+  },
+  "152x152x30 UKC": {
+   "shape": "I",
+   "h": 157.6,
+   "b": 152.9,
+   "tw": 6.5,
+   "tf": 9.4,
+   "r": 7.6,
+   "kg_m": 30.0,
+   "A_cm2": 38.3,
+   "Ix_cm4": 1748,
+   "Iy_cm4": 560
+  },
+  "152x152x23 UKC": {
+   "shape": "I",
+   "h": 152.4,
+   "b": 152.2,
+   "tw": 5.8,
+   "tf": 6.8,
+   "r": 7.6,
+   "kg_m": 23.0,
+   "A_cm2": 29.2,
+   "Ix_cm4": 1250,
+   "Iy_cm4": 400
+  },
+  "200x100x6.3 RHS": {
+   "shape": "RHS",
+   "h": 200.0,
+   "b": 100.0,
+   "t": 6.3,
+   "kg_m": 27.9,
+   "A_cm2": 35.5
+  }
+ },
+ "connections": {
+  "comment": "Connection library + joint instances for job 14017. Types keyed by plate mark; geometry from drg 14017/08 details W, X, Y. Joint positions as grid refs [xgrid, ygrid, z_mm].",
+  "types": {
+   "PL1": {
+    "kind": "baseplate",
+    "plate": [
+     300,
+     350,
+     10
+    ],
+    "members": [
+     "B1"
+    ],
+    "bolts": {
+     "spec": "M12 gr 8.8 resin anchor (RAWL R-KEM + mesh sleeve)",
+     "dia": 12,
+     "n": 4,
+     "gauge": [
+      90,
+      115
+     ],
+     "embed_mm": 140,
+     "projection_mm": 60
+    },
+    "desc": "Baseplate bearing on PC floor (Detail X)"
+   },
+   "PL2": {
+    "kind": "baseplate",
+    "plate": [
+     275,
+     300,
+     10
+    ],
+    "members": [
+     "B5"
+    ],
+    "bolts": {
+     "spec": "M12 gr 8.8 resin anchor",
+     "dia": 12,
+     "n": 4,
+     "gauge": [
+      77.5,
+      90
+     ],
+     "embed_mm": 140,
+     "projection_mm": 60
+    },
+    "desc": "Baseplate bearing on PC floor (Detail Y)"
+   },
+   "PL3": {
+    "kind": "cap_plate",
+    "plate": [
+     220,
+     260,
+     8
+    ],
+    "members": [
+     "P1",
+     "B3"
+    ],
+    "bolts": {
+     "spec": "M16 gr 8.8 bolt",
+     "dia": 16,
+     "n": 4,
+     "gauge": [
+      50,
+      70
+     ],
+     "length_mm": 70
+    },
+    "desc": "RHS post cap plate, beams over (Detail W)"
+   },
+   "PL4": {
+    "kind": "end_plate",
+    "plate": [
+     200,
+     150,
+     10
+    ],
+    "members": [
+     "B3"
+    ],
+    "bolts": {
+     "spec": "M16 gr 8.8 bolt",
+     "dia": 16,
+     "n": 4,
+     "gauge": [
+      40,
+      65
+     ],
+     "length_mm": 60
+    },
+    "desc": "Beam end plate (Detail W) - size estimated, not dimensioned"
+   }
+  },
+  "joints": [
+   {
+    "id": "J-B1-1D",
+    "type": "PL1",
+    "at": [
+     "1",
+     "D",
+     0
+    ],
+    "members": [
+     "B1"
+    ],
+    "note": "B1 end bearing",
+    "pos_mm": [
+     0.0,
+     3487.0,
+     0.0
+    ]
+   },
+   {
+    "id": "J-B1-4D",
+    "type": "PL1",
+    "at": [
+     "4",
+     "D",
+     0
+    ],
+    "members": [
+     "B1",
+     "B2"
+    ],
+    "note": "B1/B2 splice bearing",
+    "pos_mm": [
+     10498.0,
+     3487.0,
+     0.0
+    ]
+   },
+   {
+    "id": "J-B1-1F",
+    "type": "PL1",
+    "at": [
+     "1",
+     "F",
+     0
+    ],
+    "members": [
+     "B1"
+    ],
+    "note": "B1 end bearing",
+    "pos_mm": [
+     0.0,
+     14547.0,
+     0.0
+    ]
+   },
+   {
+    "id": "J-B1-4F",
+    "type": "PL1",
+    "at": [
+     "4",
+     "F",
+     0
+    ],
+    "members": [
+     "B1",
+     "B2"
+    ],
+    "note": "B1/B2 splice bearing",
+    "pos_mm": [
+     10498.0,
+     14547.0,
+     0.0
+    ]
+   },
+   {
+    "id": "J-B5-7D",
+    "type": "PL2",
+    "at": [
+     "7",
+     "D",
+     -1200
+    ],
+    "members": [
+     "B5"
+    ],
+    "note": "Raking B5 end bearing at eaves",
+    "pos_mm": [
+     21636.0,
+     3487.0,
+     -1200.0
+    ]
+   },
+   {
+    "id": "J-B5-7F",
+    "type": "PL2",
+    "at": [
+     "7",
+     "F",
+     -1200
+    ],
+    "members": [
+     "B5"
+    ],
+    "note": "Raking B5 end bearing at eaves",
+    "pos_mm": [
+     21636.0,
+     14547.0,
+     -1200.0
+    ]
+   },
+   {
+    "id": "J-B3-2D",
+    "type": "PL4",
+    "at": [
+     "2",
+     "D",
+     0
+    ],
+    "members": [
+     "B3",
+     "B1"
+    ],
+    "note": "B3 end plate into B1 web",
+    "normal": [
+     0,
+     -1,
+     0
+    ],
+    "pos_mm": [
+     3150.0,
+     3487.0,
+     0.0
+    ]
+   },
+   {
+    "id": "J-B3-5D",
+    "type": "PL4",
+    "at": [
+     "5",
+     "D",
+     0
+    ],
+    "members": [
+     "B3",
+     "B2"
+    ],
+    "note": "B3 end plate into B2 web",
+    "normal": [
+     0,
+     -1,
+     0
+    ],
+    "pos_mm": [
+     15413.0,
+     3487.0,
+     0.0
+    ]
+   },
+   {
+    "id": "J-P1-2E",
+    "type": "PL3",
+    "at": [
+     "2",
+     "E",
+     0
+    ],
+    "members": [
+     "P1",
+     "B3"
+    ],
+    "note": "Post cap, B3 end plate over",
+    "pos_mm": [
+     3150.0,
+     9017.0,
+     0.0
+    ]
+   },
+   {
+    "id": "J-P1-5E",
+    "type": "PL3",
+    "at": [
+     "5",
+     "E",
+     0
+    ],
+    "members": [
+     "P1",
+     "B3"
+    ],
+    "note": "Post cap, B3 end plate over",
+    "pos_mm": [
+     15413.0,
+     9017.0,
+     0.0
+    ]
+   }
+  ]
  }
 }

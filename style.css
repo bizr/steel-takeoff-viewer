@@ -73,8 +73,8 @@ body {
 }
 .tb-btn:hover { color: var(--text); border-color: #3a4654; }
 .tb-btn.active { color: #fff; border-color: var(--accent); background: #21384e; }
-.tb-spacer { flex: 1; }
-.sel-info { font-size: 12px; color: var(--text-dim); font-family: var(--mono); }
+.tb-spacer { flex: 1; min-width: 8px; }
+.sel-info { font-size: 12px; color: var(--text-dim); font-family: var(--mono); white-space: nowrap; }
 
 /* ---- side panel ---- */
 #panel {
@@ -162,3 +162,33 @@ tr.rowmark.selected td { background: #21384e; }
   #panel { max-width: none; }
   #kpis { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ---- member card ---- */
+#viewport-wrap { position: relative; }
+#member-card {
+  position: absolute; top: 54px; left: 12px; width: 320px; max-height: calc(100% - 70px);
+  overflow-y: auto; background: rgba(19,23,29,0.96); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px 16px; backdrop-filter: blur(4px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.45); z-index: 5;
+}
+#member-card.hidden { display: none; }
+#member-card .mc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+#member-card .mc-head .mark-chip { font-size: 14px; padding: 3px 10px; }
+#member-card .mc-sec { font-family: var(--mono); font-size: 13px; color: var(--text); flex: 1; }
+#member-card .mc-close {
+  background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; padding: 0 2px;
+}
+#member-card .mc-close:hover { color: var(--text); }
+#member-card h5 {
+  margin: 12px 0 5px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px;
+  color: var(--text-dim); border-top: 1px solid var(--line); padding-top: 10px;
+}
+#member-card h5:first-of-type { border-top: none; padding-top: 0; }
+.mc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 12px; }
+.mc-grid .k { color: var(--text-dim); }
+.mc-grid .v { text-align: right; font-family: var(--mono); color: var(--text); }
+.mc-conn { font-size: 12px; margin: 3px 0; color: var(--text); }
+.mc-conn .mark-chip { transform: scale(0.85); transform-origin: left center; }
+.mc-note { font-size: 11.5px; color: var(--warn); background: #241d0e; border: 1px solid #4a3a1a;
+  border-radius: 7px; padding: 7px 9px; margin-top: 6px; line-height: 1.45; }
+.mc-loc { font-size: 11.5px; color: var(--text-dim); line-height: 1.45; margin-top: 4px; }

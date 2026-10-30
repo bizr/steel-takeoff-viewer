@@ -22,11 +22,11 @@ const sun = new THREE.DirectionalLight(0xffffff, 0.9);
 sun.position.set(1.5, -1, 2.5);
 scene.add(sun);
 
-const g2d = new THREE.Group(), g3d = new THREE.Group(),
-      gMark = new THREE.Group(), gText = new THREE.Group(), gGrid = new THREE.Group();
-scene.add(g2d, g3d, gMark, gText, gGrid);
+const g2d = new THREE.Group(), g3d = new THREE.Group(), gMark = new THREE.Group(),
+      gText = new THREE.Group(), gGrid = new THREE.Group(), gConn = new THREE.Group();
+scene.add(g2d, g3d, gMark, gText, gGrid, gConn);
 
-const LAYERS = { sheet: [g2d], model: [g3d], marks: [gMark], text: [gText], grid: [gGrid] };
+const LAYERS = { sheet: [g2d], model: [g3d], marks: [gMark], text: [gText], grid: [gGrid], conn: [gConn] };
 document.querySelectorAll('[data-layer]').forEach(btn => {
   btn.onclick = () => {
     btn.classList.toggle('active');
@@ -125,8 +125,115 @@ function buildSheet(dwg) {
   gText.position.copy(g2d.position);
 }
 
+// ---------- real section geometry ----------
+// Local frame: x = flange width, y = section depth, z = member axis (0..len).
+function iSectionGeo(sec, len, sc) {
+  const b = sec.b * sc, h = sec.h * sc, tw = Math.max(sec.tw * sc, 0.4), tf = sec.tf * sc;
+  const pts = [
+    [-b/2,-h/2],[b/2,-h/2],[b/2,-h/2+tf],[tw/2,-h/2+tf],[tw/2,h/2-tf],[b/2,h/2-tf],
+    [b/2,h/2],[-b/2,h/2],[-b/2,h/2-tf],[-tw/2,h/2-tf],[-tw/2,-h/2+tf],[-b/2,-h/2+tf],
+  ].map(p => new THREE.Vector2(p[0], p[1]));
+  const geo = new THREE.ExtrudeGeometry(new THREE.Shape(pts), { depth: len, bevelEnabled: false });
+  return geo;
+}
+
+function memberGeo(m, len, sc, sections) {
+  const sec = sections?.[m.section];
+  if (sec?.shape === 'I') return { geo: iSectionGeo(sec, len, sc), depth: sec.h * sc };
+  const h = (sec?.h ?? m.depth_mm) * sc, w = (sec?.b ?? m.width_mm) * sc;
+  const geo = new THREE.BoxGeometry(w, h, len);
+  geo.translate(0, 0, len / 2);  // match extrusion: axis 0..len
+  return { geo, depth: h };
+}
+
+// orient local (x=flange, y=depth, z=axis) onto segment dir with depth vertical
+function memberQuat(dir) {
+  const up = Math.abs(dir.z) > 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+  const yAxis = up.clone().sub(dir.clone().multiplyScalar(up.dot(dir))).normalize();
+  const xAxis = new THREE.Vector3().crossVectors(yAxis, dir);
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis, yAxis, dir));
+}
+
+// ---------- connections ----------
+const PLATE_MAT = new THREE.MeshStandardMaterial({ color: 0x9aa7b2, metalness: 0.55, roughness: 0.35 });
+const BOLT_MAT = new THREE.MeshStandardMaterial({ color: 0x3d434b, metalness: 0.6, roughness: 0.4 });
+const BOLT_VIS = 2;  // bolts drawn 2x so they read at plan zoom
+
+function boltMesh(dia, len, sc, hexHead = true) {
+  const g = new THREE.Group();
+  const r = dia / 2 * BOLT_VIS * sc;
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len * sc, 10), BOLT_MAT);
+  g.add(shaft);
+  if (hexHead) {
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.8, r * 1.8, dia * 0.7 * BOLT_VIS * sc, 6), BOLT_MAT);
+    head.position.y = len * sc / 2 + dia * 0.35 * BOLT_VIS * sc;
+    g.add(head);
+  }
+  return g;
+}
+
+function plateMesh(w, d, t, sc) {
+  return new THREE.Mesh(new THREE.BoxGeometry(w * sc, d * sc, t * sc), PLATE_MAT);
+}
+
+function buildConnections(data, tf, sc) {
+  gConn.clear();
+  const conn = data.connections;
+  if (!conn) return;
+  const dirTf = (v) => {   // model-space direction -> viewer direction (linear part of tf)
+    const o = tf(0, 0, 0), p = tf(v[0], v[1], v[2]);
+    return new THREE.Vector3(p[0] - o[0], p[1] - o[1], p[2] - o[2]).normalize();
+  };
+  for (const j of conn.joints) {
+    const T = conn.types[j.type];
+    const [w, d, t] = T.plate;
+    const P = tf(...j.pos_mm);
+    const grp = new THREE.Group();
+    grp.position.set(P[0], P[1], P[2]);
+    if (T.kind === 'baseplate') {
+      const plate = plateMesh(w, d, t, sc);
+      plate.position.z = -t * sc / 2;
+      grp.add(plate);
+      for (const gx of [-1, 1]) for (const gy of [-1, 1]) {
+        const b = boltMesh(T.bolts.dia, T.bolts.projection_mm + t, sc);
+        b.position.set(gx * T.bolts.gauge[0] * sc, gy * T.bolts.gauge[1] * sc,
+                       (T.bolts.projection_mm - t) * sc / 2);
+        grp.add(b);
+      }
+    } else if (T.kind === 'cap_plate') {
+      const plate = plateMesh(w, d, t, sc);
+      plate.position.z = -t * sc / 2;
+      grp.add(plate);
+      for (const gx of [-1, 1]) for (const gy of [-1, 1]) {
+        const b = boltMesh(T.bolts.dia, T.bolts.length_mm, sc);
+        b.position.set(gx * T.bolts.gauge[0] * sc, gy * T.bolts.gauge[1] * sc, 0);
+        grp.add(b);
+      }
+    } else if (T.kind === 'end_plate') {
+      // vertical plate, face normal = joint normal (model space), centred at beam half-depth
+      const n = dirTf(j.normal ?? [0, -1, 0]);
+      const beamH = 157.6 * sc;  // B3 depth
+      const plate = plateMesh(d, t, w, sc);   // width across, thickness through, height vertical
+      plate.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+      plate.position.copy(n).multiplyScalar(t * sc / 2);
+      plate.position.z += beamH / 2;
+      grp.add(plate);
+      for (const gx of [-1, 1]) for (const gz of [-1, 1]) {
+        const b = boltMesh(T.bolts.dia, T.bolts.length_mm, sc);
+        b.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+        const off = new THREE.Vector3()
+          .addScaledVector(new THREE.Vector3().crossVectors(n, new THREE.Vector3(0, 0, 1)).normalize(), gx * T.bolts.gauge[0] * sc)
+          .addScaledVector(new THREE.Vector3(0, 0, 1), gz * T.bolts.gauge[1] * sc + beamH / 2);
+        b.position.copy(off);
+        grp.add(b);
+      }
+    }
+    gConn.add(grp);
+  }
+}
+
 function buildModel(data) {
-  g3d.clear(); gMark.clear(); gGrid.clear(); meshesByMark.clear();
+  g3d.clear(); gMark.clear(); gGrid.clear(); gConn.clear(); meshesByMark.clear();
   const reg = data.registration, sc = reg ? reg.scale_pt_per_mm : 1;
   const cc = state.sheetCenter || { x: 0, y: 0 };
   // model mm -> viewer coords (aligned with the 2D sheet when registration exists)
@@ -140,25 +247,30 @@ function buildModel(data) {
     const mat = new THREE.MeshStandardMaterial({
       color: STATUS_COLOR[m.status] ?? 0x8fb8ff, metalness: 0.35, roughness: 0.5 });
     for (const s of m.segments) {
-      const lift = reg ? m.depth_mm / 2 : 0;
-      const a = new THREE.Vector3(...tf(s.from[0], s.from[1], s.from[2] + lift));
-      const b = new THREE.Vector3(...tf(s.to[0], s.to[1], s.to[2] + lift));
-      const box = new THREE.Mesh(new THREE.BoxGeometry(a.distanceTo(b), m.depth_mm * sc, m.width_mm * sc), mat);
-      box.position.copy(a).add(b).multiplyScalar(0.5);
-      box.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), b.clone().sub(a).normalize());
+      const a = new THREE.Vector3(...tf(s.from[0], s.from[1], s.from[2]));
+      const b = new THREE.Vector3(...tf(s.to[0], s.to[1], s.to[2]));
+      const dir = b.clone().sub(a), len = dir.length();
+      dir.normalize();
+      const { geo, depth } = memberGeo(m, len, sc, data.sections);
+      const box = new THREE.Mesh(geo, mat);
+      const vertical = Math.abs(dir.z) > 0.9;
+      const lift = vertical ? 0 : depth / 2;   // horizontal beams rest on their bottom flange
+      box.position.copy(a); box.position.z += lift;
+      box.quaternion.copy(memberQuat(dir));
       box.userData.mark = m.mark;
       g3d.add(box);
       if (!meshesByMark.has(m.mark)) meshesByMark.set(m.mark, []);
       meshesByMark.get(m.mark).push(box);
+      const mid = a.clone().add(b).multiplyScalar(0.5); mid.z += lift;
       const ring = new THREE.Mesh(new THREE.RingGeometry(220 * sc, 300 * sc, 32), ringMat);
-      ring.position.copy(box.position); ring.position.z += m.depth_mm * sc;
+      ring.position.copy(mid); ring.position.z += depth;
       gMark.add(ring);
       const cv = document.createElement('canvas'); cv.width = 128; cv.height = 64;
       const ctx = cv.getContext('2d'); ctx.font = '600 52px system-ui'; ctx.fillStyle = '#fff';
       ctx.fillText(m.mark, 10, 46);
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true }));
       sp.scale.set(900 * sc, 450 * sc, 1);
-      sp.position.copy(box.position); sp.position.z += 700 * sc;
+      sp.position.copy(mid); sp.position.z += 700 * sc;
       gMark.add(sp);
     }
   }
@@ -171,6 +283,7 @@ function buildModel(data) {
   gg.setAttribute('color', new THREE.Float32BufferAttribute(flat, 3));
   gGrid.add(new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ vertexColors: true })));
   if (reg) gGrid.position.z = 1;
+  buildConnections(data, tf, sc);
 
   if (!reg) {
     const span = state.sheetSpan;
@@ -178,7 +291,7 @@ function buildModel(data) {
     const c3 = box3.getCenter(new THREE.Vector3());
     const size3 = box3.getSize(new THREE.Vector3());
     const k = span * 0.55 / Math.max(size3.x, size3.y, 1);
-    for (const grp of [g3d, gMark, gGrid]) {
+    for (const grp of [g3d, gMark, gGrid, gConn]) {
       grp.scale.setScalar(k);
       grp.position.set(span * 0.62 - c3.x * k, -c3.y * k, -c3.z * k);
     }
@@ -190,6 +303,48 @@ function buildModel(data) {
 }
 
 // ---------- selection ----------
+const memberCard = document.getElementById('member-card');
+
+function fillMemberCard(mark) {
+  if (!mark || !state.data) { memberCard.classList.add('hidden'); return; }
+  const d = state.data;
+  const rows = d.members.filter(m => m.mark === mark);
+  if (!rows.length) { memberCard.classList.add('hidden'); return; }
+  const m = rows[0];
+  const mass = rows.reduce((s, r) => s + r.mass_kg, 0);
+  const sec = d.sections?.[m.section];
+  const secRows = sec ? [
+    ['Depth h', sec.h + ' mm'], ['Flange width b', sec.b + ' mm'],
+    ...(sec.shape === 'I' ? [['Web tw', sec.tw + ' mm'], ['Flange tf', sec.tf + ' mm'], ['Root radius r', sec.r + ' mm']]
+                         : [['Wall t', sec.t + ' mm']]),
+    ['Mass', sec.kg_m + ' kg/m'], ['Area', sec.A_cm2 + ' cm²'],
+    ...(sec.Ix_cm4 ? [['Ixx', sec.Ix_cm4.toLocaleString() + ' cm⁴'], ['Iyy', sec.Iy_cm4.toLocaleString() + ' cm⁴']] : []),
+  ] : [];
+  const conns = (d.connections?.joints ?? []).filter(j => j.members.includes(mark));
+  const connHtml = conns.map(j => {
+    const T = d.connections.types[j.type];
+    return `<div class="mc-conn"><span class="mark-chip">${j.type}</span> ${esc(T.desc)}<br>
+      <span style="color:var(--text-dim)">${T.plate.join('×')} mm plate · ${T.bolts.n}No ${esc(T.bolts.spec)} · ${j.id.replace('J-', '')} · ${esc(j.note)}</span></div>`;
+  }).join('');
+  const assum = (d.assumptions ?? []).filter(a => a.mark === mark);
+  memberCard.innerHTML = `
+    <div class="mc-head"><span class="mark-chip">${mark}</span><span class="mc-sec">${esc(m.section)}</span>
+      <span class="pill pill-${m.status}">${m.status}</span>
+      <button class="mc-close" title="close">×</button></div>
+    <div class="mc-grid">
+      <span class="k">Quantity</span><span class="v">${m.qty}</span>
+      <span class="k">Length each</span><span class="v">${fmt(m.length_mm)} mm</span>
+      <span class="k">Total mass</span><span class="v">${fmt(mass)} kg</span>
+    </div>
+    <div class="mc-loc">${esc(m.location)}<br>Source: ${esc(m.source)}</div>
+    ${secRows.length ? `<h5>Section properties (BS 4-1 / EN 10365)</h5>
+    <div class="mc-grid">${secRows.map(([k, v]) => `<span class="k">${k}</span><span class="v">${v}</span>`).join('')}</div>` : ''}
+    ${conns.length ? `<h5>Connections</h5>${connHtml}` : ''}
+    ${assum.map(a => `<div class="mc-note">⚠ ${esc(a.text)}</div>`).join('')}`;
+  memberCard.classList.remove('hidden');
+  memberCard.querySelector('.mc-close').onclick = () => select(null);
+}
+
 function select(mark) {
   state.selected = mark;
   for (const [mk, meshes] of meshesByMark)
@@ -203,23 +358,31 @@ function select(mark) {
     const rows = state.data.members.filter(m => m.mark === mark);
     const mass = rows.reduce((s, m) => s + m.mass_kg, 0);
     info.textContent = `${mark} · ${rows[0].section} · ${mass.toLocaleString()} kg`;
-    const target = new THREE.Vector3();
-    for (const mesh of meshesByMark.get(mark) ?? []) target.add(mesh.getWorldPosition(new THREE.Vector3()));
-    if (meshesByMark.has(mark)) {
-      target.divideScalar(meshesByMark.get(mark).length);
-      animateTarget(target);
+    const bbox = new THREE.Box3();
+    for (const mesh of meshesByMark.get(mark) ?? []) bbox.expandByObject(mesh);
+    if (!bbox.isEmpty()) {
+      const center = bbox.getCenter(new THREE.Vector3());
+      const size = bbox.getSize(new THREE.Vector3());
+      flyTo(center, Math.max(size.x, size.y, size.z) * 1.7 + 100);
     }
   } else info.textContent = 'click a member or table row';
+  fillMemberCard(mark);
 }
 
-let targetAnim = null;
-function animateTarget(to) {
-  const from = controls.target.clone();
-  const t0 = performance.now();
-  targetAnim = () => {
-    const t = Math.min((performance.now() - t0) / 500, 1);
-    controls.target.lerpVectors(from, to, 1 - (1 - t) ** 3);
-    if (t >= 1) targetAnim = null;
+let camAnim = null;
+function flyTo(target, dist) {
+  const t0 = performance.now(), dur = 700;
+  const fromT = controls.target.clone(), fromP = camera.position.clone();
+  const cur = fromP.clone().sub(fromT);
+  // keep current azimuth but approach at ~35 deg elevation so 3D detail reads
+  const az = Math.atan2(cur.y, cur.x);
+  const dir = new THREE.Vector3(Math.cos(az) * Math.cos(0.61), Math.sin(az) * Math.cos(0.61), Math.sin(0.61));
+  const toP = target.clone().add(dir.multiplyScalar(dist));
+  camAnim = () => {
+    const t = Math.min((performance.now() - t0) / dur, 1), e = 1 - (1 - t) ** 3;
+    controls.target.lerpVectors(fromT, target, e);
+    camera.position.lerpVectors(fromP, toP, e);
+    if (t >= 1) camAnim = null;
   };
 }
 
@@ -242,6 +405,7 @@ const camViews = {
   front: { pos: [0, -1.7, 0.25],    tgt: [0, 0, 0] },
 };
 function setCam(name) {
+  camAnim = null;
   const v = camViews[name];
   const fit = state.data?.registration ? state.modelSpan : state.sheetSpan;
   const c = state.data?.registration && state.modelCenter ? state.modelCenter : new THREE.Vector3();
@@ -250,10 +414,11 @@ function setCam(name) {
   controls.update();
 }
 document.querySelectorAll('[data-cam]').forEach(b => b.onclick = () => setCam(b.dataset.cam));
+addEventListener('keydown', e => { if (e.key === 'Escape') select(null); });
 
 // ---------- UI panels ----------
 const fmt = n => n.toLocaleString('en-GB', { maximumFractionDigits: 2 });
-const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[s]));
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 function fillKPIs(d) {
   document.getElementById('project-sub').textContent =
@@ -365,4 +530,4 @@ async function loadAll() {
 }
 try { new EventSource('events').onmessage = () => loadAll(); } catch {}
 loadAll();
-(function anim() { requestAnimationFrame(anim); if (targetAnim) targetAnim(); renderer.render(scene, camera); })();
+(function anim() { requestAnimationFrame(anim); if (camAnim) camAnim(); renderer.render(scene, camera); })();
