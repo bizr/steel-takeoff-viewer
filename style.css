@@ -227,7 +227,7 @@ tr.rowmark:hover td { background: #faf6f2; }
 .table-mark { display: inline-grid; place-items: center; min-width: 29px; padding: 4px 6px; background: #eef1ed; border-radius: 4px; font: 650 8.5px var(--mono); }
 .item-description { color: var(--muted); font-size: 8px; margin-top: 2px; }
 .procurement-content, .qa-content { padding: 15px 16px; }
-.summary-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 17px; }
+.summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 9px; margin-bottom: 17px; }
 .summary-box { padding: 10px 12px; border: 1px solid var(--line); background: #fafbf9; border-radius: 7px; }
 .summary-box span { display: block; color: var(--muted); font-size: 8px; }
 .summary-box strong { display: block; font: 650 14px var(--mono); margin-top: 3px; }
@@ -266,8 +266,11 @@ tr.rowmark:hover td { background: #faf6f2; }
 .issue-card.missing { background: #fffafa; border-color: #efd3cf; }
 .issue-card p { margin: 0; color: var(--ink-soft); font-size: 8.5px; line-height: 1.45; }
 .issue-card strong { display: block; font-size: 9px; margin-bottom: 3px; }
-.check-pass, .check-warn { display: inline-flex; align-items: center; gap: 5px; font-size: 7.5px; font-weight: 650; }
-.check-pass { color: var(--green); }.check-warn { color: var(--amber); }
+.check-pass, .check-warn, .check-fail, .check-skip { display: inline-flex; align-items: center; gap: 5px; font-size: 7.5px; font-weight: 650; white-space: nowrap; }
+.check-pass { color: var(--green); }.check-warn { color: var(--amber); }.check-fail { color: var(--red); }.check-skip { color: var(--muted); }
+.summary-box strong.is-fail { color: var(--red); }
+.rowcheck { cursor: pointer; }.rowcheck:hover td { color: var(--accent); }
+.review-checks td:last-child { line-height: 1.45; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }::-webkit-scrollbar-thumb { background: #cdd4cf; border-radius: 5px; }::-webkit-scrollbar-track { background: transparent; }
 .quote-terms { padding: 4px 16px 18px; border-top: 1px solid var(--line); font-size: 9.5px; line-height: 1.5; color: var(--ink); outline: none; }
 .quote-terms h3 { margin: 16px 0 6px; font-size: 10.5px; }
@@ -343,7 +346,7 @@ body.utilities-collapsed .utility-rail { display: none; }
   .summary-box span { font-size: 10.5px; }.summary-box strong { font-size: 16px; }
   .section-heading h3, .qa-section h3 { font-size: 13px; }.section-heading span { font-size: 10.5px; }
   .bar-head, .bar-head strong { font-size: 10.5px; }.bar-foot { font-size: 9.5px; }.bar-track { height: 24px; }.bar-seg { font-size: 9.5px; }
-  .issue-card p { font-size: 11.5px; }.issue-card strong { font-size: 12px; }.check-pass, .check-warn { font-size: 10px; }
+  .issue-card p { font-size: 11.5px; }.issue-card strong { font-size: 12px; }.check-pass, .check-warn, .check-fail, .check-skip { font-size: 10px; }
   .quote-total-label, .quote-currency, .quote-breakdown div { font-size: 11px; }.hour-card span { font-size: 10px; }.quote-disclaimer { font-size: 10.5px; }
   .quote-terms { font-size: 12px; }.quote-terms h3 { font-size: 13px; }.offer-small { font-size: 11px; }.offer-label { font-size: 9.5px; }.qtotal td { font-size: 13px; }
   .viewport-help, .viewport-badge, .viewport-badge strong { font-size: 10px; }

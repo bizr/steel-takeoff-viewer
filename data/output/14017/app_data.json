@@ -1,6 +1,6 @@
 {
  "format": "takeoff-app/1",
- "generated": "2026-10-30T22:53:15+00:00",
+ "generated": "2026-10-31T11:46:15+00:00",
  "project": {
   "job_id": "14017",
   "job": "14017",
@@ -1005,6 +1005,274 @@
    "id": "B4/B3",
    "status": "auto-warning",
    "text": "B4/B3: fin plate (extended) | \u26a0 minimum bolt spacing used (e1 30, p1 50) to fit 120 mm | \u26a0 extended plate lever 123 > t/0.15 - plate buckling/LTB check"
+  }
+ ],
+ "review_checks": [
+  {
+   "id": "CHK1",
+   "check": "section_conflict",
+   "status": "warning",
+   "text": "B4 is priced as 152x152x30 UKC; the schedule notes record a conflict with 152x152x23 - keep the RFI open.",
+   "members": [
+    "B4"
+   ],
+   "pos_mm": null,
+   "evidence": {
+    "schedule": [
+     "152x152x30 UKC"
+    ],
+    "labels": {
+     "152x152x30 UKC": [
+      "14017_05b Roof Plan p1 plan (152x152x30 UKC)",
+      "14017_05b Roof Plan p1 plan (152x152x30 UKC)"
+     ]
+    },
+    "notes_mention": [
+     "152X152X23"
+    ],
+    "label_ids": []
+   }
+  },
+  {
+   "id": "CHK2",
+   "check": "section_conflict",
+   "status": "warning",
+   "text": "B5 is priced as 152x152x23 UKC but the drawings also call it 152x152x30 UKC on 14017_04c Second Plan p1 plan (152x152x30 UKC), 14017_04c Second Plan p1 plan (152x152x30 UKC) (already noted in the schedule - keep the RFI open).",
+   "members": [
+    "B5"
+   ],
+   "pos_mm": null,
+   "evidence": {
+    "schedule": [
+     "152x152x23 UKC"
+    ],
+    "labels": {
+     "152x152x30 UKC": [
+      "14017_04c Second Plan p1 plan (152x152x30 UKC)",
+      "14017_04c Second Plan p1 plan (152x152x30 UKC)"
+     ],
+     "152x152x23 UKC": [
+      "14017_08b Roof Sections and Details p1 elevation (152x152x23 UKC) via leader",
+      "14017_08b Roof Sections and Details p1 elevation (152x152x23 UKC)"
+     ]
+    },
+    "notes_mention": [],
+    "label_ids": [
+     "L142",
+     "L184"
+    ]
+   }
+  },
+  {
+   "id": "CHK3",
+   "check": "symmetry",
+   "status": "warning",
+   "text": "The steel is broadly symmetric about grid E (89% by length). 2 of its 5 pieces without a mirror twin are of a section that is twinned elsewhere in the frame: SF2 180x90x26 UKPFC at 2+2548 / J-53 (twin would be at 2+2548 / A+50); SF3 203x203x46 UKC at 4-1075 / E+2484 (twin would be at 4-1075 / E-2486) - a piece missing from the schedule, or a real asymmetry? (The other lonely pieces read as real asymmetry.)",
+   "members": [
+    "SF2",
+    "SF3"
+   ],
+   "pos_mm": [
+    5698.0,
+    50.0,
+    -380.0
+   ],
+   "evidence": {
+    "axis": "grid E",
+    "score": 0.889,
+    "twin_pos_mm": [
+     [
+      5698.0,
+      50.0,
+      -380.0
+     ],
+     [
+      9423.0,
+      6531.0,
+      -403.0
+     ]
+    ],
+    "other_lonely": [
+     "P1 200x100x6.3 RHS at 2+971 / E+253 (twin would be at 2+971 / E-255)",
+     "P1 200x100x6.3 RHS at 5-40 / E+105 (twin would be at 5-40 / E-107)",
+     "SF4 200x90x30 UKPFC at 3-258 / E+1451 (twin would be at 3-258 / E-1453)"
+    ]
+   }
+  },
+  {
+   "id": "CHK4",
+   "check": "length_status",
+   "status": "warning",
+   "text": "SP1 (100x100x5.0 SHS) is priced on a length the drawings do not give (4 x 3600 mm = 212 kg, 5.1% of net steel) - confirm before ordering. Its modelled position also fails the support check (2 rows in the evidence) - expected with a placeholder length.",
+   "members": [
+    "SP1"
+   ],
+   "pos_mm": [
+    -154.0,
+    -153.0,
+    -3000.0
+   ],
+   "evidence": {
+    "kg": 211.7,
+    "rows": 1,
+    "support_rows": [
+     {
+      "status": "fail",
+      "text": "SP1: 4 feet at z -3000 (1-154 / A-153; 1-154 / J+150; 7+161 / C-162; 7+161 / G+161) are not on a declared level (nearest datum z=0 at +0, -3000 mm) or on another member - the post height or the level is wrong (length is MISSING: placeholder).",
+      "pos_mm": [
+       -154.0,
+       -153.0,
+       -3000.0
+      ]
+     },
+     {
+      "status": "warning",
+      "text": "SP1: top at z +600 (1-154 / A-153; 1-154 / J+150; 7+161 / C-162; 7+161 / G+161) meets no modelled member - no soffit within 100 mm above it, no beam framing in. What does it carry?",
+      "pos_mm": [
+       -154.0,
+       -153.0,
+       600.0
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "CHK5",
+   "check": "length_status",
+   "status": "warning",
+   "text": "Plate PL5 (Baseplate (Detail 2) for P1 RHS post on PC units) is priced with a size the drawings do not give (2 x 350x250x15 = 21 kg).",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "plate": "PL5",
+    "kg": 20.6
+   }
+  },
+  {
+   "id": "CHK6",
+   "check": "length_status",
+   "status": "warning",
+   "text": "Plate PL6 (Base/cap plate for SP1 SHS post (galvanised)) is priced with a size the drawings do not give (8 x 150x150x10 = 14 kg).",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "plate": "PL6",
+    "kg": 14.1
+   }
+  },
+  {
+   "id": "CHK7",
+   "check": "qty_vs_model",
+   "status": "ok",
+   "text": "Schedule quantity matches the modelled pieces for 12 marks.",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "marks": [
+     "B1",
+     "B2",
+     "B3",
+     "B4",
+     "B5",
+     "P1",
+     "SF1",
+     "SF2",
+     "SF3",
+     "SF4",
+     "SF5",
+     "SP1"
+    ]
+   }
+  },
+  {
+   "id": "CHK8",
+   "check": "mark_count",
+   "status": "ok",
+   "text": "12 label counts are within the scheduled quantities.",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "found": [
+     "14017_04c Second Plan p1: 100x100x5.0 SHS 4 label(s) <= 4 scheduled",
+     "14017_04c Second Plan p1: 152x152x30 UKC 2 label(s) <= 6 scheduled",
+     "14017_04c Second Plan p1: 180x90x26 PFC 3 label(s) <= 3 scheduled",
+     "14017_04c Second Plan p1: 200x100x6.3 RHS 2 label(s) <= 2 scheduled",
+     "14017_04c Second Plan p1: 200x90x30 PFC 1 label(s) <= 1 scheduled",
+     "14017_04c Second Plan p1: 203x102x23 UKB 2 label(s) <= 2 scheduled",
+     "14017_04c Second Plan p1: 203x203x46 UKC 3 label(s) <= 3 scheduled",
+     "14017_04c Second Plan p1: 203x203x71 UKC 2 label(s) <= 2 scheduled",
+     "14017_05b Roof Plan p1: 152x152x30 UKC 6 label(s) <= 6 scheduled",
+     "14017_05b Roof Plan p1: 152x152x37 UKC 2 label(s) <= 2 scheduled",
+     "14017_05b Roof Plan p1: 200x100x6.3 RHS 2 label(s) <= 2 scheduled",
+     "14017_05b Roof Plan p1: 203x203x46 UKC 2 label(s) <= 3 scheduled"
+    ],
+    "unread_labels": 0
+   }
+  },
+  {
+   "id": "CHK9",
+   "check": "label_match",
+   "status": "ok",
+   "text": "37 section labels tied to modelled members through 4 registered views (13 set off on a leader). Not compared: 14017_08b Roof Sections and Details p1: 8 section labels (outside every registered view).",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "views": [
+     "14017_04c Second Plan p1 plan",
+     "14017_05b Roof Plan p1 plan",
+     "14017_08b Roof Sections and Details p1 elevation",
+     "14017_08b Roof Sections and Details p1 elevation 2"
+    ],
+    "notes": [
+     "14017_08b Roof Sections and Details p1: 8 section labels not compared (outside every registered view)"
+    ]
+   }
+  },
+  {
+   "id": "CHK10",
+   "check": "overlap",
+   "status": "ok",
+   "text": "No collinear overlaps between 27 modelled pieces.",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "pieces": 27
+   }
+  },
+  {
+   "id": "CHK11",
+   "check": "vertical_support",
+   "status": "ok",
+   "text": "12 support / length conditions pass.",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "levels": "datum z=0 +0, 2nd floor SSL 65.730 +0",
+    "found": [
+     "B1 foot on datum z=0 (+10)",
+     "B1 foot on datum z=0 (+10)",
+     "B1 foot on datum z=0 (+10)",
+     "B1 foot on datum z=0 (+10)",
+     "B5 foot on datum z=0 (+10)",
+     "B5 foot on datum z=0 (+10)",
+     "P1 foot on datum z=0 (+15)",
+     "P1 top meets B3 (soffit, +8)",
+     "P1 foot on datum z=0 (+15)",
+     "P1 top meets B3 (soffit, +8)",
+     "P1 length = top - base",
+     "SP1 length = top - base"
+    ]
+   }
+  },
+  {
+   "id": "CHK12",
+   "check": "kg_sanity",
+   "status": "ok",
+   "text": "kg/m agrees with designation, dimensions and library for 10 sections; no odd lengths or piece masses in 16 member and 9 plate rows.",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {}
   }
  ],
  "grids": {
@@ -2100,6 +2368,28 @@
    "Ix_cm4": 1748,
    "Iy_cm4": 560
   },
+  "152x152x51 UKC": {
+   "shape": "I",
+   "h": 170.2,
+   "b": 157.4,
+   "tw": 11.0,
+   "tf": 15.7,
+   "r": 7.6,
+   "kg_m": 51.2,
+   "A_cm2": 65.2,
+   "note": "BS 4-1 2016 addition; Ix/Iy not entered"
+  },
+  "152x152x44 UKC": {
+   "shape": "I",
+   "h": 166.0,
+   "b": 155.9,
+   "tw": 9.5,
+   "tf": 13.6,
+   "r": 7.6,
+   "kg_m": 44.0,
+   "A_cm2": 56.1,
+   "note": "BS 4-1 2016 addition; Ix/Iy not entered"
+  },
   "152x152x23 UKC": {
    "shape": "I",
    "h": 152.4,
@@ -2111,6 +2401,17 @@
    "A_cm2": 29.2,
    "Ix_cm4": 1250,
    "Iy_cm4": 400
+  },
+  "610x229x140 UKB": {
+   "shape": "I",
+   "h": 617.2,
+   "b": 230.2,
+   "tw": 13.1,
+   "tf": 22.1,
+   "r": 12.7,
+   "kg_m": 139.9,
+   "A_cm2": 178,
+   "note": "Ix/Iy not entered"
   },
   "457x191x98 UKB": {
    "shape": "I",

@@ -940,16 +940,52 @@ function connectionReport(data) {
   return rows ? `<section class="qa-section"><h3>Connections</h3><table><thead><tr><th>Joint</th><th>Status</th><th>Detail</th></tr></thead><tbody>${rows}</tbody></table></section>` : '';
 }
 
+// Deterministic drawing / model checks (takeoff/checks.py): what was checked, not only what failed.
+const REVIEW_STATUS = { fail: ['check-fail', '✕ Fail'], warning: ['check-warn', '⚠ Warning'], ok: ['check-pass', '✓ OK'], skipped: ['check-skip', '– Skipped'] };
+const CHECK_NAMES = { qty_vs_model: 'Quantity vs model', mark_count: 'Label count', section_conflict: 'Section conflict', label_match: 'Labels vs model', overlap: 'Overlap', symmetry: 'Symmetry', vertical_support: 'Post support', length_status: 'Missing sizes', kg_sanity: 'kg sanity' };
+
+function drawingChecks(data) {
+  const rows = (data.review_checks ?? []).map(row => {
+    const [cls, label] = REVIEW_STATUS[row.status] ?? ['check-warn', row.status];
+    const locatable = row.pos_mm || row.members.some(mark => data.members.some(member => member.mark === mark));
+    const marks = row.members.length ? `<div class="item-description">${row.members.map(esc).join(', ')}</div>` : '';
+    return `<tr${locatable ? ` class="rowcheck" data-check="${esc(row.id)}" tabindex="0" title="Show in the 3D model"` : ''}><td><span class="${cls}">${label}</span></td><td>${esc(CHECK_NAMES[row.check] ?? row.check)}${marks}</td><td>${esc(row.text)}</td></tr>`;
+  }).join('');
+  return rows ? `<section class="qa-section"><h3>Drawing checks</h3><table class="review-checks"><thead><tr><th>Result</th><th>Check</th><th>Finding</th></tr></thead><tbody>${rows}</tbody></table></section>` : '';
+}
+
+function focusPoint(pos) {
+  showPage('model');
+  setViewMode('model');
+  const center = toWorld(...pos);
+  const direction = modelCamera.position.clone().sub(controls.target).normalize();
+  animateCamera(center, center.clone().addScaledVector(direction, 2.5));
+}
+
+function focusCheck(id) {
+  const row = state.data?.review_checks?.find(item => item.id === id);
+  if (!row) return;
+  const mark = row.members.find(item => state.data.members.some(member => member.mark === item));
+  if (mark) selectMember(mark, !row.pos_mm);
+  if (row.pos_mm) focusPoint(row.pos_mm);
+}
+
 function fillQA(data) {
   const passed = data.checks.filter(check => check.deviation_pct < 15).length;
+  const review = data.review_checks ?? [];
+  const count = status => review.filter(row => row.status === status).length;
   const issues = data.assumptions.map(assumption => {
     const member = data.members.find(item => item.mark === assumption.mark);
     const missing = member?.status === 'MISSING';
     return `<div class="issue-card ${missing ? 'missing' : ''}" data-mark="${esc(assumption.mark)}" tabindex="0" role="button"><span class="table-mark">${esc(assumption.mark)}</span><div><strong>${missing ? 'Missing dimension' : 'Estimated quantity'} · ${esc(member?.section ?? '')}</strong><p>${esc(assumption.text)}</p></div></div>`;
   }).join('');
   const checks = data.checks.map(check => `<tr><td><span class="table-mark">${esc(check.mark)}</span></td><td class="num">${fmt(check.modelled_mm, 0)} mm</td><td class="num">${fmt(check.schedule_mm, 0)} mm</td><td class="num">${fmt(check.deviation_pct, 1)}%</td><td><span class="${check.deviation_pct < 15 ? 'check-pass' : 'check-warn'}">${check.deviation_pct < 15 ? '✓ Within tolerance' : '⚠ Review deviation'}</span></td></tr>`).join('');
-  $('#qa-content').innerHTML = `<div class="summary-strip"><div class="summary-box"><span>Open review items</span><strong>${data.assumptions.length}</strong></div><div class="summary-box"><span>Length checks passing</span><strong>${passed} / ${data.checks.length}</strong></div><div class="summary-box"><span>Source drawings</span><strong>${data.project.drawings.length}</strong></div></div><section class="qa-section"><h3>Assumptions &amp; missing information</h3><div class="issue-list">${issues}</div></section><section class="qa-section"><h3>Model ↔ schedule length cross-check</h3><table><thead><tr><th>Mark</th><th class="num">Modelled</th><th class="num">Scheduled</th><th class="num">Deviation</th><th>Result</th></tr></thead><tbody>${checks}</tbody></table></section>${connectionReport(data)}`;
+  $('#qa-content').innerHTML = `<div class="summary-strip"><div class="summary-box"><span>Open review items</span><strong>${data.assumptions.length}</strong></div><div class="summary-box"><span>Length checks passing</span><strong>${passed} / ${data.checks.length}</strong></div><div class="summary-box"><span>Source drawings</span><strong>${data.project.drawings.length}</strong></div>${review.length ? `<div class="summary-box"><span>Drawing checks</span><strong class="${count('fail') ? 'is-fail' : ''}">${count('fail')} fail · ${count('warning')} warn</strong></div>` : ''}</div>${drawingChecks(data)}<section class="qa-section"><h3>Assumptions &amp; missing information</h3><div class="issue-list">${issues}</div></section><section class="qa-section"><h3>Model ↔ schedule length cross-check</h3><table><thead><tr><th>Mark</th><th class="num">Modelled</th><th class="num">Scheduled</th><th class="num">Deviation</th><th>Result</th></tr></thead><tbody>${checks}</tbody></table></section>${connectionReport(data)}`;
   $$('#qa-content [data-joint]').forEach(row => row.onclick = () => focusConnection(row.dataset.joint));
+  $$('#qa-content [data-check]').forEach(row => {
+    row.onclick = () => focusCheck(row.dataset.check);
+    row.onkeydown = event => { if (event.key === 'Enter') focusCheck(row.dataset.check); };
+  });
   $$('#qa-content .issue-card').forEach(card => {
     card.onclick = () => selectMember(card.dataset.mark);
     card.onkeydown = event => { if (event.key === 'Enter') selectMember(card.dataset.mark); };
@@ -1241,7 +1277,9 @@ function reviewItems() {
   if (!data) return [];
   const members = data.assumptions.map(item => ({ kind: 'member', id: item.mark }));
   const joints = (data.connections?.joints ?? []).filter(joint => joint.auto && joint.warnings?.length).map(joint => ({ kind: 'joint', id: joint.id }));
-  return [...members, ...joints];
+  const checks = status => (data.review_checks ?? []).filter(row => row.status === status && (row.pos_mm || row.members.length))
+    .map(row => ({ kind: 'check', id: row.id, label: `${CHECK_NAMES[row.check] ?? row.check} ${row.members.join(', ')}`.trim() }));
+  return [...checks('fail'), ...members, ...joints, ...checks('warning')];
 }
 
 function cycleReview(step) {
@@ -1249,8 +1287,8 @@ function cycleReview(step) {
   if (!items.length) return toast('No open review items');
   state.reviewIndex = ((state.reviewIndex ?? -1) + step + items.length) % items.length;
   const item = items[state.reviewIndex];
-  if (item.kind === 'member') selectMember(item.id); else focusConnection(item.id);
-  toast(`Review ${state.reviewIndex + 1}/${items.length}: ${item.id}`);
+  if (item.kind === 'member') selectMember(item.id); else if (item.kind === 'check') focusCheck(item.id); else focusConnection(item.id);
+  toast(`Review ${state.reviewIndex + 1}/${items.length}: ${item.label ?? item.id}`);
 }
 
 function focusSearch() {
