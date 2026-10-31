@@ -1,0 +1,8 @@
+{
+ "format": "levels/1",
+ "datum_level_m": 65.73,
+ "levels": {
+  "2nd floor SSL 65.730": 0
+ },
+ "source": "z = mm above 2nd floor SSL 65.730 (14017/08 Detail Z / Section K-K, layout.json). Lower floors not issued. Read by takeoff/checks.py (vertical_support, section views); kept out of grids.json so that file stays as the estimator wrote it."
+}

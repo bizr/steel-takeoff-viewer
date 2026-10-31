@@ -635,7 +635,9 @@ function buildModel(data) {
       const { geometry, depth } = memberGeometry(member, length, data.sections);
       const mesh = new THREE.Mesh(geometry, materials.get(member.mark));
       const vertical = Math.abs(direction.y) > 0.9;
-      const lift = vertical ? 0 : depth / 2;
+      // layout z = underside for beams: lift the centre line so the bottom flange (square to the
+      // axis) passes through it - h/2 on the level, h/(2 cos slope) on a rafter
+      const lift = vertical ? 0 : depth / 2 / Math.sqrt(1 - direction.y * direction.y);
       mesh.position.copy(start);
       mesh.position.y += lift;
       mesh.quaternion.copy(memberQuaternion(direction, member.web_dir));
@@ -862,6 +864,409 @@ function modelDXF(data) {
   return { text: dxfDocument(layers, entities, { min, max }), counts };
 }
 
+// --- Tekla export (IFC2x3 CV2.0) -------------------------------------------------
+// Tekla Structures 20.1 reads IFC2x3 Coordination View 2.0, and "Convert IFC objects"
+// turns parametric reference beams, columns and plates into native parts (bolts stay
+// reference objects). So every member is an IfcExtrudedAreaSolid of a catalogue-named
+// profile (UB305*127*42, SHS100*100*5.0 ...), never a mesh, laid out the way Tekla 20.1
+// exports its own model: beam placement X = member axis and Z = web; column placement on
+// world axes with the web turned by the extrusion's RefDirection; every member one
+// IfcElementAssembly tagged with our mark; Tekla Common / Quantity / Assembly / Bolt
+// psets; mm and kg. Built from the data (not the meshes) in the same frame and with
+// the same cardinal points as buildModel, so it lands on the grid exactly like the DXF.
+// GUIDs are UUIDv5 of "<job>|<object key>" (Tekla's own GUIDs are its object ids):
+// re-exporting after an edit keeps each object's GUID, so Tekla sees a change, not a
+// delete + add. Pure data in, STEP text out: no THREE, no DOM.
+const IFC_GUID_NS = '2bd2923719a95f36bcd77bd175e4fccb';   // uuid5(NAMESPACE_URL, 'https://steel-takeoff/ifc')
+const IFC_GUID_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$';
+const IFC_STEEL_GRADE = /\bS(235|275|355|460)(J0|J2H|J2|JR|K2)?\b/;
+const IFC_COLOURS = { steel: [0.47, 0.56, 0.55], plate: [0.39, 0.45, 0.44], bolt: [0.21, 0.25, 0.24] };   // the viewer's steel, plate and bolt greys
+// our family suffix (after normaliseSection) -> Tekla UK catalogue prefix; dims joined by *,
+// hollow-section walls always to one decimal (SHS100*100*10.0, as Tekla writes them)
+const TEKLA_FAMILY = { UKB: 'UB', UKC: 'UC', UBP: 'UBP', PFC: 'PFC', EA: 'RSA', UA: 'RSA', SHS: 'SHS', RHS: 'RHS', CHS: 'CHS' };
+
+// synchronous SHA-1: crypto.subtle is missing when the viewer is opened over a LAN IP (not a secure origin)
+function sha1(bytes) {
+  const size = ((bytes.length + 9 + 63) >> 6) << 6, m = new Uint8Array(size), view = new DataView(m.buffer);
+  m.set(bytes);
+  m[bytes.length] = 0x80;
+  view.setUint32(size - 4, bytes.length * 8);
+  view.setUint32(size - 8, Math.floor(bytes.length / 0x20000000));
+  const h = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0], w = new Uint32Array(80);
+  for (let offset = 0; offset < size; offset += 64) {
+    for (let i = 0; i < 16; i++) w[i] = view.getUint32(offset + i * 4);
+    for (let i = 16; i < 80; i++) { const x = w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]; w[i] = (x << 1) | (x >>> 31); }
+    let [a, b, c, d, e] = h;
+    for (let i = 0; i < 80; i++) {
+      const [f, k] = i < 20 ? [(b & c) | (~b & d), 0x5a827999] : i < 40 ? [b ^ c ^ d, 0x6ed9eba1] : i < 60 ? [(b & c) | (b & d) | (c & d), 0x8f1bbcdc] : [b ^ c ^ d, 0xca62c1d6];
+      const t = (((a << 5) | (a >>> 27)) + f + e + k + w[i]) >>> 0;
+      e = d; d = c; c = ((b << 30) | (b >>> 2)) >>> 0; b = a; a = t;
+    }
+    [a, b, c, d, e].forEach((value, i) => { h[i] = (h[i] + value) >>> 0; });
+  }
+  const out = new Uint8Array(20);
+  h.forEach((value, i) => new DataView(out.buffer).setUint32(i * 4, value));
+  return out;
+}
+
+// UUIDv5(IFC_GUID_NS, key) in IFC's 22-character base 64 (= ifcopenshell.guid.compress(uuid5(...).hex))
+function ifcGuid(key) {
+  const b = sha1(Uint8Array.from([...IFC_GUID_NS.match(/../g).map(hex => parseInt(hex, 16)), ...new TextEncoder().encode(key)])).slice(0, 16);
+  b[6] = (b[6] & 0x0f) | 0x50;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const encode = (n, digits) => { let s = ''; for (let i = 0; i < digits; i++) { s = IFC_GUID_CHARS[n % 64] + s; n = Math.floor(n / 64); } return s; };
+  let out = encode(b[0], 2);
+  for (let i = 1; i < 16; i += 3) out += encode(b[i] * 65536 + b[i + 1] * 256 + b[i + 2], 4);
+  return out;
+}
+
+// "457x191x67 UKB" -> UB457*191*67, "100x100x5.0 SHS" -> SHS100*100*5.0; null = not a family Tekla's UK catalogue names this way
+function teklaProfile(designation) {
+  const match = normaliseSection(designation).match(/^(\d+(?:\.\d+)?(?:X\d+(?:\.\d+)?)+) ([A-Z]+)$/);
+  const prefix = match && TEKLA_FAMILY[match[2]];
+  if (!prefix) return null;
+  const dims = match[1].split('X');
+  if (['SHS', 'RHS', 'CHS'].includes(match[2])) dims.push(Number(dims.pop()).toFixed(1));
+  return prefix + dims.join('*');
+}
+
+// STEP literals: reals always carry a '.', strings escape ' and \ and write non-ASCII as \X2\hhhh\X0\
+function ifcNum(n) {
+  const s = String(Math.abs(n) < 1e-9 ? 0 : Number(n.toPrecision(12)));
+  if (s.includes('e')) { const [mantissa, exp] = s.split('e'); return `${mantissa.includes('.') ? mantissa : `${mantissa}.`}E${exp}`; }
+  return s.includes('.') ? s : `${s}.`;
+}
+const ifcStr = value => value == null ? '$' : `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "''")
+  .replace(/[^\x20-\x7e]+/g, run => `\\X2\\${run.split('').map(c => c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')).join('')}\\X0\\`)}'`;
+const ifcElevation = z => { const m = Math.round(z) / 1000; return `${m < 0 ? '-' : ' +'}${Math.abs(m).toFixed(3)}`; };   // Tekla's ' +4.740' labels
+const ifcLevelName = z => `${Math.round(z) < 0 ? '' : '+'}${Math.round(z)}`;   // Tekla's grid names: '+0', '+3000', '-450'
+const ifcDim = n => String(Math.round(n * 10) / 10);
+const vsub = (a, b) => a.map((n, i) => n - b[i]), vadd = (a, b) => a.map((n, i) => n + b[i]), vmul = (a, k) => a.map(n => n * k);
+const vdot = (a, b) => a.reduce((sum, n, i) => sum + n * b[i], 0), vunit = a => vmul(a, 1 / Math.hypot(...a));
+const vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+
+// levels: optional data/<job>/levels.json "levels" ({name: z_mm}) -> one storey and one grid per level
+function modelIFC(data, { levels = null, fileName = 'model.ifc' } = {}) {
+  const lines = [];
+  const e = (type, ...args) => { lines.push(`#${lines.length + 1}= ${type}(${args.join(',')});`); return `#${lines.length}`; };
+  const list = items => `(${items.join(',')})`;
+  const job = data.project?.job_id ?? data.project?.job ?? 'job';
+  const G = key => ifcStr(ifcGuid(`${job}|${key}`));
+  const pt = p => e('IFCCARTESIANPOINT', list(p.map(ifcNum)));
+  const dir = v => e('IFCDIRECTION', list(v.map(ifcNum)));
+  const ax3 = (origin, z, x) => e('IFCAXIS2PLACEMENT3D', pt(origin), dir(z), dir(x));
+  const placement = (parent, origin, z = [0, 0, 1], x = [1, 0, 0]) => e('IFCLOCALPLACEMENT', parent, ax3(origin, z, x));
+  const shape = rep => e('IFCPRODUCTDEFINITIONSHAPE', '$', '$', list([rep]));
+  const counts = { members: 0, parts: 0, plates: 0, boltGroups: 0, bolts: 0, unmapped: 0, unmappedSections: [] };
+
+  // header objects, units, contexts, project > site > building > storeys (Tekla's own chain)
+  const org = e('IFCORGANIZATION', '$', ifcStr('steel_takeoff'), '$', '$', '$');
+  const person = e('IFCPERSONANDORGANIZATION', e('IFCPERSON', '$', ifcStr('steel_takeoff'), '$', '$', '$', '$', '$', '$'), org, '$');
+  const app = e('IFCAPPLICATION', org, ifcStr('1'), ifcStr('steel_takeoff viewer'), ifcStr('steel_takeoff'));
+  const created = Math.floor((Date.parse(data.generated) || 0) / 1000);   // data time, not now: same data = same file
+  const OH = e('IFCOWNERHISTORY', person, app, '$', '.NOCHANGE.', '$', '$', '$', String(created));
+  const world = ax3([0, 0, 0], [0, 0, 1], [1, 0, 0]);
+  const context = e('IFCGEOMETRICREPRESENTATIONCONTEXT', '$', ifcStr('Model'), '3', '1.E-005', world, '$');
+  const body = e('IFCGEOMETRICREPRESENTATIONSUBCONTEXT', ifcStr('Body'), ifcStr('Model'), '*', '*', '*', '*', context, '$', '.MODEL_VIEW.', '$');
+  const footprint = e('IFCGEOMETRICREPRESENTATIONSUBCONTEXT', ifcStr('FootPrint'), ifcStr('Model'), '*', '*', '*', '*', context, '$', '.MODEL_VIEW.', '$');
+  const units = e('IFCUNITASSIGNMENT', list([
+    e('IFCSIUNIT', '*', '.LENGTHUNIT.', '.MILLI.', '.METRE.'), e('IFCSIUNIT', '*', '.AREAUNIT.', '$', '.SQUARE_METRE.'),
+    e('IFCSIUNIT', '*', '.VOLUMEUNIT.', '$', '.CUBIC_METRE.'), e('IFCSIUNIT', '*', '.MASSUNIT.', '.KILO.', '.GRAM.'),
+    e('IFCSIUNIT', '*', '.PLANEANGLEUNIT.', '$', '.RADIAN.')]));
+  const project = e('IFCPROJECT', G('project'), OH, ifcStr(data.project?.short_name ?? job), ifcStr(data.project?.name), '$', '$', '$', list([context]), units);
+  const sitePlc = e('IFCLOCALPLACEMENT', '$', world);
+  const site = e('IFCSITE', G('site'), OH, ifcStr('Site'), '$', '$', sitePlc, '$', '$', '.ELEMENT.', '$', '$', '$', '$', '$');
+  const buildingPlc = e('IFCLOCALPLACEMENT', sitePlc, world);
+  const building = e('IFCBUILDING', G('building'), OH, ifcStr(data.project?.name ?? job), ifcStr(data.project?.package), '$', buildingPlc, '$', '$', '.ELEMENT.', '$', '$', '$');
+  const storeys = [];
+  for (const [name, z] of Object.entries(levels ?? {}).filter(([, z]) => Number.isFinite(z)).sort((a, b) => a[1] - b[1])) {
+    if (storeys.length && Math.abs(storeys.at(-1).z - z) < 1) storeys.at(-1).names.push(name);
+    else storeys.push({ z, names: [name] });
+  }
+  if (!storeys.length) storeys.push({ z: 0, names: ['Steelwork'] });
+  for (const storey of storeys) {
+    storey.plc = placement(buildingPlc, [0, 0, storey.z]);
+    storey.id = e('IFCBUILDINGSTOREY', G(`storey|${storey.z}`), OH, ifcStr(storey.names.join(' / ')), '$', '$', storey.plc, '$', ifcStr(ifcLevelName(storey.z)), '.ELEMENT.', ifcNum(storey.z));
+    storey.items = [];
+  }
+  const storeyAt = z => storeys.reduce((found, storey) => storey.z <= z + 10 ? storey : found, storeys[0]);   // highest level at or below z, else the lowest
+
+  // shared registries, written out as relationships at the end (as Tekla does)
+  const profile2d = e('IFCAXIS2PLACEMENT2D', pt([0, 0]), dir([1, 0]));
+  const up = dir([0, 0, 1]);
+  const profiles = new Map(), types = new Map(), materials = new Map(), styles = new Map(), layers = new Map(), assemblies = new Map(), rels = [];
+  const add = (map, key, item) => { if (!map.has(key)) map.set(key, []); map.get(key).push(item); };
+  const styled = (solid, name, colour) => {
+    if (!styles.has(name)) {
+      const shading = e('IFCSURFACESTYLESHADING', e('IFCCOLOURRGB', '$', ...colour.map(ifcNum)));
+      styles.set(name, e('IFCPRESENTATIONSTYLEASSIGNMENT', list([e('IFCSURFACESTYLE', ifcStr(name), '.BOTH.', list([shading]))])));
+    }
+    e('IFCSTYLEDITEM', solid, list([styles.get(name)]), '$');
+  };
+  const prop = (name, type, value) => value == null || value === '' ? null
+    : e('IFCPROPERTYSINGLEVALUE', ifcStr(name), '$', `${type}(${['IFCLABEL', 'IFCTEXT'].includes(type) ? ifcStr(value) : type === 'IFCINTEGER' ? String(Math.round(value)) : ifcNum(value)})`, '$');
+  const pset = (owner, key, name, props) => {
+    const items = props.filter(Boolean);
+    if (items.length) rels.push([`${key}|rel|${name}`, owner, e('IFCPROPERTYSET', G(`${key}|pset|${name}`), OH, ifcStr(name), '$', list(items))]);
+  };
+  const quantities = (owner, key, items) => rels.push([`${key}|rel|BaseQuantities`, owner, e('IFCELEMENTQUANTITY', G(`${key}|qto`), OH, ifcStr('BaseQuantities'), '$', '$', list(items))]);
+  const typeFor = (cls, name, object) => {
+    const key = `type|IFC${cls}TYPE|${name}`;
+    if (!types.has(key)) types.set(key, { id: e(`IFC${cls}TYPE`, G(key), OH, ifcStr(name), '$', '$', '$', '$', '$', '$', '.NOTDEFINED.'), objects: [] });
+    types.get(key).objects.push(object);
+  };
+  function profileDef(name, section, member) {
+    if (!profiles.has(name)) {
+      const n = ifcNum, head = ['.AREA.', ifcStr(name), profile2d], radius = r => r ? n(r) : '$';
+      profiles.set(name, section?.shape === 'I' ? e('IFCISHAPEPROFILEDEF', ...head, n(section.b), n(section.h), n(section.tw), n(section.tf), radius(section.r))
+        : section?.shape === 'C' ? e('IFCUSHAPEPROFILEDEF', ...head, n(section.h), n(section.b), n(section.tw), n(section.tf), radius(section.r), '$', '$', '$')   // web -x, toes +x, as the viewer
+        : section?.shape === 'L' ? e('IFCLSHAPEPROFILEDEF', ...head, n(section.h), n(section.b), n(section.t), radius(section.r1), radius(section.r2), '$', '$', '$')   // heel at -x/-y
+        : section?.shape === 'RHS' ? e('IFCRECTANGLEHOLLOWPROFILEDEF', ...head, n(section.b), n(section.h), n(section.t), n(section.t), n(1.5 * section.t))
+        : section?.shape === 'CHS' ? e('IFCCIRCLEHOLLOWPROFILEDEF', ...head, n(section.d / 2), n(section.t))
+        : e('IFCRECTANGLEPROFILEDEF', ...head, n(section?.b ?? member.width_mm), n(section?.h ?? member.depth_mm)));   // not in the library: the viewer's box
+    }
+    return profiles.get(name);
+  }
+  const rowByMark = new Map((data.members ?? []).map(row => [row.mark, row]));
+  const gradeOf = mark => {
+    const row = rowByMark.get(mark), match = `${row?.notes ?? ''} ${row?.location ?? ''} ${row?.source ?? ''}`.match(IFC_STEEL_GRADE);
+    return match ? { grade: `S${match[1]}`, drawn: match[0] } : { grade: 'S275', drawn: null };   // S275 = the quote's supply basis
+  };
+
+  // members: one IfcElementAssembly per model instance, one IfcBeam/IfcColumn per segment
+  const occurrence = new Map(), unmapped = new Set();
+  for (const member of data.model?.members ?? []) {
+    const n = (occurrence.get(member.mark) ?? 0) + 1;
+    occurrence.set(member.mark, n);
+    const section = sectionFor(data.sections, member.section);
+    const tekla = section && teklaProfile(member.section);
+    const name = tekla ?? String(member.section ?? 'UNKNOWN');
+    const depth = section?.shape === 'CHS' ? section.d : section?.h ?? member.depth_mm;   // = memberGeometry's depth (the lift)
+    const width = section?.shape === 'CHS' ? section.d : section?.b ?? member.width_mm;
+    const kgm = member.kg_m ?? section?.kg_m ?? 0;
+    const segments = [];
+    member.segments.forEach((segment, k) => {
+      const delta = vsub(segment.to, segment.from), length = Math.hypot(...delta);
+      if (length < 0.1) return;
+      // same frame as buildModel/memberQuaternion: d = axis, y = web ("up"), x = y x d; beams lifted
+      // straight up from their underside line by h/(2 cos slope) so the bottom flange lies on it
+      // (= h/2 when level), posts on their centre line
+      const d = vmul(delta, 1 / length), vertical = Math.abs(d[2]) > 0.9;
+      const webUp = vertical ? (member.web_dir ? vunit([member.web_dir[0], member.web_dir[1], 0]) : [0, -1, 0]) : [0, 0, 1];
+      const y = vunit(vsub(webUp, vmul(d, vdot(webUp, d)))), x = vcross(y, d), lift = vertical ? 0 : depth / 2 / y[2];
+      const a = vadd(segment.from, [0, 0, lift]), b = vadd(segment.to, [0, 0, lift]);
+      // the solid's real z reach about its axis (profile x and y tilted out of plan): Bottom/Top elevation
+      const reach = section?.shape === 'CHS' ? depth / 2 * Math.hypot(x[2], y[2]) : (Math.abs(x[2]) * width + Math.abs(y[2]) * depth) / 2;
+      segments.push({ k: k + 1, d, x, y, a, b, length, vertical, bottom: Math.min(a[2], b[2]) - reach, top: Math.max(a[2], b[2]) + reach });
+    });
+    if (!segments.length) continue;
+    if (!tekla) { counts.unmapped += segments.length; unmapped.add(name); }
+    const key = `asm|${member.mark}|${n}`, { grade, drawn } = gradeOf(member.mark), material = `STEEL/${grade}`;
+    const bottom = Math.min(...segments.map(s => s.bottom)), top = Math.max(...segments.map(s => s.top));
+    const storey = storeyAt(bottom), local = p => [p[0], p[1], p[2] - storey.z];
+    const asmPlc = placement(storey.plc, [0, 0, 0]);
+    const asm = e('IFCELEMENTASSEMBLY', G(key), OH, ifcStr('Steel Assembly'), '$', '$', asmPlc, '$', ifcStr(member.mark), '.NOTDEFINED.', '.RIGID_FRAME.');
+    const parts = [];
+    let kg = 0;
+    for (const s of segments) {
+      const cls = s.vertical ? 'COLUMN' : 'BEAM', partKey = `part|${member.mark}|${n}|${s.k}`;
+      // column: placed at its lower end on world axes, web turned by the extrusion's RefDirection (= x);
+      // drawn top-down, the extrusion starts at the top end (from - lower end: -L d, raked posts too)
+      // beam: placed at the TO end with X = to->from and Z = web, extruded from local (L,0,0) back to the
+      // origin, so the profile's x = our x and asymmetric PFCs/angles come out un-mirrored
+      const plc = s.vertical ? placement(asmPlc, local(s.d[2] > 0 ? s.a : s.b)) : placement(asmPlc, local(s.b), s.y, vmul(s.d, -1));
+      const position = s.vertical ? ax3(s.d[2] > 0 ? [0, 0, 0] : vsub(s.a, s.b), s.d, s.x) : ax3([s.length, 0, 0], [-1, 0, 0], [0, -1, 0]);
+      const solid = e('IFCEXTRUDEDAREASOLID', profileDef(name, section, member), position, up, ifcNum(s.length));
+      styled(solid, material, IFC_COLOURS.steel);
+      const rep = e('IFCSHAPEREPRESENTATION', body, ifcStr('Body'), ifcStr('SweptSolid'), list([solid]));
+      const part = e(`IFC${cls}`, G(partKey), OH, ifcStr(cls), ifcStr(name), ifcStr(name), plc, shape(rep), ifcStr(`${member.mark}/${n}.${s.k}`));
+      const weight = kgm * s.length / 1000, volume = section?.A_cm2 ? section.A_cm2 * 1e-4 * s.length / 1000 : null;
+      kg += weight;
+      parts.push(part);
+      add(layers, cls, rep);
+      add(materials, material, part);
+      typeFor(cls, name, part);
+      pset(part, partKey, 'Tekla Common', [prop('Bottom elevation', 'IFCLABEL', ifcElevation(s.bottom)), prop('Top elevation', 'IFCLABEL', ifcElevation(s.top)),
+        prop('Part mark', 'IFCLABEL', segments.length > 1 ? `${member.mark}.${s.k}` : member.mark), prop('Assembly mark', 'IFCLABEL', member.mark),
+        prop('Phase', 'IFCINTEGER', 1), prop('Grade', 'IFCLABEL', grade), prop('Profile', 'IFCLABEL', name), prop('Name', 'IFCLABEL', cls)]);
+      pset(part, partKey, 'Tekla Quantity', [prop('Weight', 'IFCMASSMEASURE', weight), prop('Volume', 'IFCVOLUMEMEASURE', volume),
+        prop('Height', 'IFCLENGTHMEASURE', depth), prop('Width', 'IFCLENGTHMEASURE', width), prop('Length', 'IFCLENGTHMEASURE', s.length)]);
+      quantities(part, partKey, [e('IFCQUANTITYLENGTH', ifcStr('Length'), '$', '$', ifcNum(s.length)),
+        ...(volume ? [e('IFCQUANTITYVOLUME', ifcStr('NetVolume'), '$', '$', ifcNum(volume))] : []), e('IFCQUANTITYWEIGHT', ifcStr('NetWeight'), '$', '$', ifcNum(weight))]);
+      counts.parts++;
+    }
+    const row = rowByMark.get(member.mark), main = segments.reduce((best, s) => s.length > best.length ? s : best);
+    pset(asm, key, 'Tekla Assembly', [prop('Assembly/Cast unit weight', 'IFCMASSMEASURE', kg), prop('Assembly/Cast unit bottom elevation', 'IFCLABEL', ifcElevation(bottom)),
+      prop('Assembly/Cast unit top elevation', 'IFCLABEL', ifcElevation(top)), prop('Assembly/Cast unit name', 'IFCLABEL', main.vertical ? 'COLUMN' : 'BEAM'),
+      prop('Assembly/Cast unit Mark', 'IFCLABEL', member.mark)]);
+    pset(asm, key, 'Takeoff', [prop('Job', 'IFCLABEL', data.project?.job ?? job), prop('Mark', 'IFCLABEL', member.mark), prop('Section', 'IFCLABEL', member.section),
+      prop('Status', 'IFCLABEL', member.status), prop('Grade (drawings)', 'IFCLABEL', drawn), prop('Location', 'IFCTEXT', row?.location), prop('Source', 'IFCTEXT', row?.source)]);
+    add(assemblies, member.mark, { id: asm, plc: asmPlc, storey, parts, axes: segments.map(s => [s.a, s.b]) });
+    storey.items.push(asm);
+    counts.members++;
+  }
+
+  // plates: rule-based parts[] (boxes on u, v, w = u x v) and the engineer types, drawn as buildConnections does;
+  // each joins the assembly of the member it is welded to (fin plate -> supporting member, base/cap/end plate -> its member)
+  const distance = (p, a, b) => { const ab = vsub(b, a), t = Math.max(0, Math.min(1, vdot(vsub(p, a), ab) / (vdot(ab, ab) || 1))); return Math.hypot(...vsub(p, vadd(a, vmul(ab, t)))); };
+  const ownerOf = (mark, at) => {
+    let best = null;
+    for (const instance of assemblies.get(mark) ?? []) for (const [a, b] of instance.axes) {
+      const gap = distance(at, a, b);
+      if (!best || gap < best.gap) best = { instance, gap };
+    }
+    return best && best.gap < 1500 ? best.instance : null;
+  };
+  const escapeRegExp = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const weldedTo = (joint, weld) => joint.members.filter(mark => new RegExp(`(^|[^\\w-])${escapeRegExp(mark)}(?![\\w-])`).test(weld ?? ''))
+    .sort((a, b) => b.length - a.length)[0] ?? joint.members[0];
+  // plate grade from its plates[] row, read like the members' (BP1 'provisional 30 S355'), else S275
+  const plateRows = new Map((data.plates ?? []).map(row => [row.mark, row]));
+  const plateGradeOf = mark => {
+    const row = plateRows.get(mark), match = `${row?.notes ?? ''} ${row?.description ?? ''} ${row?.source ?? ''}`.match(IFC_STEEL_GRADE);
+    return match ? { grade: `S${match[1]}`, drawn: match[0] } : { grade: 'S275', drawn: null };
+  };
+  const plates = [], boltGroups = [], jointSeen = new Map();
+  for (const joint of data.connections?.joints ?? []) {
+    const m = (jointSeen.get(joint.id) ?? 0) + 1;
+    jointSeen.set(joint.id, m);
+    const jointKey = `joint|${joint.id}#${m}`;
+    if (joint.parts) {
+      joint.parts.forEach((part, k) => {
+        const spec = joint.plates?.[k] ?? {}, size = part.size.map(ifcDim).join('x');
+        const row = (data.plates ?? []).find(item => item.size === size && String(item.source ?? '').split(/,\s*/).includes(joint.id));
+        plates.push({ key: `${jointKey}|plate|${k + 1}`, center: part.center, u: part.u, v: part.v, size: part.size, joint, mark: row?.mark, desc: spec.desc, weld: spec.weld, owner: weldedTo(joint, spec.weld) });
+      });
+      const groups = new Map();
+      for (const bolt of joint.bolt_parts ?? []) add(groups, `${bolt.dia}|${bolt.length}|${bolt.dir.join(',')}`, bolt);
+      [...groups.values()].forEach((bolts, k) => boltGroups.push({ key: `${jointKey}|bolts|${k + 1}`, bolts, joint }));
+      continue;
+    }
+    const type = data.connections.types?.[joint.type];
+    if (!type?.plate || !['baseplate', 'cap_plate', 'end_plate'].includes(type.kind)) continue;   // welds have no geometry
+    const [width, depth, t] = type.plate, bolts = [];
+    const common = { joint, mark: joint.type, desc: type.desc, owner: joint.members?.[0] };
+    if (type.kind === 'end_plate') {
+      const normal = joint.normal ?? [0, -1, 0], beamH = joint.beam_h_mm ?? type.beam_h_mm ?? 157.6, across = vunit(vcross(normal, [0, 0, 1]));
+      plates.push({ ...common, key: `${jointKey}|plate|1`, center: vadd(joint.pos_mm, vadd(vmul(normal, t / 2), [0, 0, beamH / 2])), u: vcross([0, 0, 1], normal), v: [0, 0, 1], size: [depth, width, t] });
+      if (type.bolts) for (const sx of [-1, 1]) for (const sz of [-1, 1])
+        bolts.push({ at: vadd(joint.pos_mm, vadd(vmul(across, sx * type.bolts.gauge[0]), [0, 0, sz * type.bolts.gauge[1] + beamH / 2])), dir: normal, dia: type.bolts.dia, length: type.bolts.length_mm });
+    } else {
+      plates.push({ ...common, key: `${jointKey}|plate|1`, center: vadd(joint.pos_mm, [0, 0, -t / 2]), u: [1, 0, 0], v: [0, 1, 0], size: [width, depth, t] });
+      if (type.bolts) {
+        const length = type.bolts.length_mm ?? type.bolts.projection_mm + t, z = type.kind === 'baseplate' ? (type.bolts.projection_mm - t) / 2 : 0;
+        for (const sx of [-1, 1]) for (const sy of [-1, 1]) bolts.push({ at: vadd(joint.pos_mm, [sx * type.bolts.gauge[0], sy * type.bolts.gauge[1], z]), dir: [0, 0, 1], dia: type.bolts.dia, length });
+      }
+    }
+    // the viewer always draws 4 bolts; a 2-bolt type (gauge [g, 0]) draws coincident pairs: keep one of each
+    const unique = [...new Map(bolts.map(bolt => [bolt.at.map(n => n.toFixed(1)).join(), bolt])).values()];
+    if (unique.length) boltGroups.push({ key: `${jointKey}|bolts|1`, bolts: unique, joint, anchor: type.bolts.embed_mm, spec: type.bolts.spec });
+  }
+  for (const plate of plates) {
+    const [length, width, t] = plate.size, owner = ownerOf(plate.owner, plate.center);
+    const storey = owner?.storey ?? storeyAt(plate.center[2]), u = vunit(plate.u), w = vunit(vcross(u, vunit(plate.v)));
+    const plc = placement(owner?.plc ?? storey.plc, [plate.center[0], plate.center[1], plate.center[2] - storey.z], w, u);
+    // a contour plate, as Tekla writes one: unnamed outline polygon extruded through the thickness, so
+    // the converter builds it from outline + t instead of matching a catalogue 'PL..' section by name
+    const name = `PL${ifcDim(t)}`, { grade, drawn } = plateGradeOf(plate.mark), material = `STEEL/${grade}`;
+    const outline = e('IFCPOLYLINE', list([[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]].map(([i, j]) => pt([i * length / 2, j * width / 2]))));
+    const solid = e('IFCEXTRUDEDAREASOLID', e('IFCARBITRARYCLOSEDPROFILEDEF', '.AREA.', '$', outline), ax3([0, 0, -t / 2], [0, 0, 1], [1, 0, 0]), up, ifcNum(t));
+    styled(solid, material, IFC_COLOURS.plate);
+    const rep = e('IFCSHAPEREPRESENTATION', body, ifcStr('Body'), ifcStr('SweptSolid'), list([solid]));
+    const id = e('IFCPLATE', G(plate.key), OH, ifcStr('PLATE'), ifcStr(name), ifcStr(name), plc, shape(rep), ifcStr(plate.joint.id ?? plate.mark));
+    (owner?.parts ?? storey.items).push(id);
+    add(layers, 'PLATE', rep);
+    add(materials, material, id);
+    const half = (Math.abs(u[2]) * length + Math.abs(vunit(plate.v)[2]) * width + Math.abs(w[2]) * t) / 2;   // box corners' z reach
+    pset(id, plate.key, 'Tekla Common', [prop('Bottom elevation', 'IFCLABEL', ifcElevation(plate.center[2] - half)), prop('Top elevation', 'IFCLABEL', ifcElevation(plate.center[2] + half)),
+      prop('Part mark', 'IFCLABEL', plate.mark), prop('Assembly mark', 'IFCLABEL', owner ? plate.owner : plate.mark), prop('Phase', 'IFCINTEGER', 1),
+      prop('Grade', 'IFCLABEL', grade), prop('Profile', 'IFCLABEL', name), prop('Name', 'IFCLABEL', 'PLATE')]);
+    pset(id, plate.key, 'Tekla Quantity', [prop('Weight', 'IFCMASSMEASURE', length * width * t * 7.85e-6), prop('Length', 'IFCLENGTHMEASURE', length),
+      prop('Width', 'IFCLENGTHMEASURE', width), prop('Height', 'IFCLENGTHMEASURE', t)]);
+    pset(id, plate.key, 'Takeoff', [prop('Job', 'IFCLABEL', data.project?.job ?? job), prop('Joint', 'IFCLABEL', plate.joint.id), prop('Plate', 'IFCLABEL', plate.desc),
+      prop('Weld', 'IFCLABEL', plate.weld), prop('Welded to', 'IFCLABEL', owner ? plate.owner : null), prop('Grade (drawings)', 'IFCLABEL', drawn)]);
+    counts.plates++;
+  }
+
+  // bolts: one IfcMechanicalFastener per group, Tekla-style - local +Y = bolt axis from under the
+  // head towards the tip (the viewer's head sits at +dir), one mapped bolt per position
+  const boltMaps = new Map();
+  const boltMap = (dia, length) => {
+    const key = `${dia}|${length}`;
+    if (!boltMaps.has(key)) {
+      const yAxis = [0, 1, 0], radius = 0.8 * dia / Math.cos(Math.PI / 6);   // hexagon head 1.6 d across flats, 0.65 d high
+      const shank = e('IFCEXTRUDEDAREASOLID', e('IFCCIRCLEPROFILEDEF', '.AREA.', '$', profile2d, ifcNum(dia / 2)), ax3([0, 0, 0], yAxis, [1, 0, 0]), up, ifcNum(length));
+      const hexagon = e('IFCPOLYLINE', list([...Array(7)].map((_, i) => pt([radius * Math.cos(i * Math.PI / 3), radius * Math.sin(i * Math.PI / 3)]))));
+      const head = e('IFCEXTRUDEDAREASOLID', e('IFCARBITRARYCLOSEDPROFILEDEF', '.AREA.', '$', hexagon), ax3([0, -0.65 * dia, 0], yAxis, [1, 0, 0]), up, ifcNum(0.65 * dia));
+      styled(shank, '8.8XOX', IFC_COLOURS.bolt);
+      styled(head, '8.8XOX', IFC_COLOURS.bolt);
+      boltMaps.set(key, e('IFCREPRESENTATIONMAP', world, e('IFCSHAPEREPRESENTATION', body, ifcStr('Body'), ifcStr('SweptSolid'), list([shank, head]))));
+    }
+    return boltMaps.get(key);
+  };
+  for (const group of boltGroups) {
+    const first = group.bolts[0], yAxis = vmul(vunit(first.dir), -1);
+    const ref = Math.abs(yAxis[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1];
+    const xAxis = vunit(vsub(ref, vmul(yAxis, vdot(ref, yAxis)))), zAxis = vcross(xAxis, yAxis);
+    const origin = vadd(first.at, vmul(vunit(first.dir), first.length / 2)), storey = storeyAt(first.at[2]);
+    const plc = placement(storey.plc, [origin[0], origin[1], origin[2] - storey.z], zAxis, xAxis);
+    const items = group.bolts.map(bolt => {
+      const offset = vsub(vadd(bolt.at, vmul(vunit(bolt.dir), bolt.length / 2)), origin);
+      return e('IFCMAPPEDITEM', boltMap(bolt.dia, bolt.length), e('IFCCARTESIANTRANSFORMATIONOPERATOR3D', '$', '$', pt([vdot(offset, xAxis), vdot(offset, yAxis), vdot(offset, zAxis)]), '$', '$'));
+    });
+    const rep = e('IFCSHAPEREPRESENTATION', body, ifcStr('Body'), ifcStr('MappedRepresentation'), list(items));
+    const id = e('IFCMECHANICALFASTENER', G(group.key), OH, ifcStr('Bolt assembly'), '$', '$', plc, shape(rep), ifcStr(group.joint.id ?? group.joint.type), ifcNum(first.dia), ifcNum(first.length));
+    const hole = group.joint.holes?.[0]?.d0 ?? first.dia + (first.dia > 24 ? 3 : 2);
+    storey.items.push(id);
+    add(layers, 'BOLT', rep);
+    add(materials, '8.8XOX', id);
+    pset(id, group.key, 'Tekla Bolt', [prop('Bolt hole diameter', 'IFCLENGTHMEASURE', hole), prop('Location', 'IFCLABEL', 'Site'), prop('Bolt count', 'IFCINTEGER', group.bolts.length),
+      prop('Bolt size', 'IFCLENGTHMEASURE', first.dia), prop('Bolt length', 'IFCLENGTHMEASURE', first.length), prop('Bolt standard', 'IFCLABEL', '8.8XOX'),
+      prop('Bolt Name', 'IFCLABEL', `BOLTM${ifcDim(first.dia)}*${ifcDim(first.length)}`)]);
+    pset(id, group.key, 'Takeoff', [prop('Joint', 'IFCLABEL', group.joint.id), prop('Specification', 'IFCLABEL', group.spec ?? group.joint.note),
+      prop('Anchor embedment', 'IFCLENGTHMEASURE', group.anchor)]);
+    counts.boltGroups++;
+    counts.bolts += group.bolts.length;
+  }
+
+  // grids: one IfcGrid per level ('+0', '+3000' ...), axes 2 m past the outer lines, sharing the polylines
+  const grids = [], xs = Object.entries(data.grids?.x_grids ?? {}), ys = Object.entries(data.grids?.y_grids ?? {});
+  if (xs.length && ys.length) {
+    const X = xs.map(([, x]) => x), Y = ys.map(([, y]) => y), over = 2000;
+    const xLines = X.map(x => e('IFCPOLYLINE', list([pt([x, Math.min(...Y) - over]), pt([x, Math.max(...Y) + over])])));
+    const yLines = Y.map(y => e('IFCPOLYLINE', list([pt([Math.min(...X) - over, y]), pt([Math.max(...X) + over, y])])));
+    const curves = e('IFCGEOMETRICCURVESET', list([...xLines, ...yLines]));
+    for (const storey of storeys) {
+      const rep = e('IFCSHAPEREPRESENTATION', footprint, ifcStr('FootPrint'), ifcStr('GeometricCurveSet'), list([curves]));
+      const uAxes = xs.map(([label], i) => e('IFCGRIDAXIS', ifcStr(label), xLines[i], '.T.'));
+      const vAxes = ys.map(([label], i) => e('IFCGRIDAXIS', ifcStr(label), yLines[i], '.T.'));
+      grids.push(e('IFCGRID', G(`grid|${storey.z}`), OH, ifcStr(ifcLevelName(storey.z)), '$', '$', placement(buildingPlc, [0, 0, storey.z]), shape(rep), list(uAxes), list(vAxes), '$'));
+      add(layers, `Grid ${ifcLevelName(storey.z)}`, rep);
+    }
+  }
+
+  // relationships
+  e('IFCRELAGGREGATES', G('rel|project'), OH, '$', '$', project, list([site]));
+  e('IFCRELAGGREGATES', G('rel|site'), OH, '$', '$', site, list([building]));
+  e('IFCRELAGGREGATES', G('rel|building'), OH, '$', '$', building, list(storeys.map(storey => storey.id)));
+  for (const [mark, instances] of assemblies) instances.forEach((instance, i) => e('IFCRELAGGREGATES', G(`asm|${mark}|${i + 1}|agg`), OH, '$', '$', instance.id, list(instance.parts)));
+  for (const storey of storeys) if (storey.items.length) e('IFCRELCONTAINEDINSPATIALSTRUCTURE', G(`rel|storey|${storey.z}|contains`), OH, '$', '$', list(storey.items), storey.id);
+  if (grids.length) e('IFCRELCONTAINEDINSPATIALSTRUCTURE', G('rel|building|contains'), OH, '$', '$', list(grids), building);
+  for (const [key, type] of types) e('IFCRELDEFINESBYTYPE', G(`rel|${key}`), OH, '$', '$', list(type.objects), type.id);
+  for (const [name, objects] of materials) e('IFCRELASSOCIATESMATERIAL', G(`rel|material|${name}`), OH, '$', '$', list(objects), e('IFCMATERIAL', ifcStr(name)));
+  for (const [key, owner, definition] of rels) e('IFCRELDEFINESBYPROPERTIES', G(key), OH, '$', '$', list([owner]), definition);
+  for (const [name, reps] of layers) e('IFCPRESENTATIONLAYERASSIGNMENT', ifcStr(name), '$', list(reps), '$');
+
+  counts.unmappedSections = [...unmapped];
+  const header = [
+    'ISO-10303-21;', 'HEADER;',
+    "FILE_DESCRIPTION(('ViewDefinition [CoordinationView_V2.0, QuantityTakeOffAddOnView]'),'2;1');",
+    `FILE_NAME(${ifcStr(fileName)},${ifcStr(String(data.generated ?? '').slice(0, 19))},(${ifcStr('steel_takeoff')}),(${ifcStr('steel_takeoff')}),${ifcStr('steel_takeoff viewer')},${ifcStr('steel_takeoff IFC export')},'');`,
+    "FILE_SCHEMA(('IFC2X3'));", 'ENDSEC;', '', 'DATA;'];
+  return { text: [...header, ...lines, 'ENDSEC;', '', 'END-ISO-10303-21;', ''].join('\n'), counts };
+}
+// --- end Tekla export
+
 function download(name, text, type) {
   const url = URL.createObjectURL(new Blob([text], { type }));
   const link = document.createElement('a');
@@ -894,6 +1299,21 @@ function exportDXF() {
     const { text, counts } = modelDXF(state.data);
     download(exportName('3d_model', 'dxf'), text, 'application/dxf');
     toast(`DXF saved: ${counts.members} members, ${counts.plates} plates, ${counts.bolts} bolts (mm)`);
+  }, 30);
+}
+
+async function exportIFC() {
+  toggleExportMenu(false);
+  if (!state.data) return;
+  toast('Building IFC…');
+  // levels live with the job's inputs (data/<job>/levels.json), not in app_data: one storey + grid each when served
+  const levels = await fetchJSON(`data/data/${encodeURIComponent(JOB || '14017')}/levels.json`).then(file => file.levels).catch(() => null);
+  setTimeout(() => {   // let the toast paint: a big job takes a moment
+    const name = exportName('3d_model_tekla', 'ifc');
+    const { text, counts } = modelIFC(state.data, { levels, fileName: name });
+    download(name, text, 'application/x-step');
+    const unmapped = counts.unmapped ? ` · ${counts.unmapped} parts with no Tekla profile name (${counts.unmappedSections.join(', ')}): check them after converting` : '';
+    toast(`IFC saved: ${counts.members} members (${counts.parts} parts), ${counts.plates} plates, ${counts.boltGroups} bolt groups (mm, IFC2x3)${unmapped}`);
   }, 30);
 }
 
@@ -1322,7 +1742,7 @@ function bindUI() {
     renderMemberList();
   });
   $('#export-data').onclick = () => toggleExportMenu();
-  $$('[data-export]').forEach(button => button.onclick = () => (button.dataset.export === 'dxf' ? exportDXF : exportJSON)());
+  $$('[data-export]').forEach(button => button.onclick = () => ({ dxf: exportDXF, ifc: exportIFC, json: exportJSON })[button.dataset.export]());
   document.addEventListener('pointerdown', event => { if (!event.target.closest('.export-menu')) toggleExportMenu(false); });
   // role=menu: arrows/Home/End move between the items and stop here, so the camera
   // shortcuts behind the menu don't pan; Tab to anything outside closes it (a null
@@ -1606,6 +2026,7 @@ const SHORTCUTS = [
   ['Workspace', 'Mod+Shift+P', 'Print / save offer as PDF', () => { showPage('quote'); setTimeout(() => window.print(), 50); }],
   ['Workspace', 'Mod+S', 'Export takeoff data (JSON)', exportJSON, true],
   ['Workspace', 'Mod+Shift+S', 'Export 3D model for CAD (DXF)', exportDXF],
+  ['Workspace', 'Mod+Shift+E', 'Export 3D model for Tekla (IFC)', exportIFC],
   ['Workspace', '[', 'Navigation panel on/off', () => toggleCollapse('#show-nav', '#collapse-nav')],
   ['Workspace', ']', 'Side panels on/off', () => toggleCollapse('#show-utilities', '#collapse-utilities')],
   ['Help', 'F1', 'Keyboard shortcuts', () => toggleHelp(), true],

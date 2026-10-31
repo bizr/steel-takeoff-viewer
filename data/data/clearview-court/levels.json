@@ -1,0 +1,14 @@
+{
+ "format": "levels/1",
+ "datum_level_m": 59.805,
+ "levels": {
+  "top of existing GB 59.355": -450,
+  "GF FFL 59.805": 0,
+  "1st FFL 62.805": 3000,
+  "2nd floor PC slab top 65.730": 5925,
+  "2nd FFL 65.805": 6000,
+  "3rd FFL 68.805": 9000,
+  "4th FFL 71.805": 12000
+ },
+ "source": "Levels from layout.json comment (BR-15/16) and ST-P2 notes (2nd floor precast top ~65.730, FT1); z = mm above GF FFL 59.805 AOD. Read by takeoff/checks.py (vertical_support, section views); kept out of grids.json so that file stays as the estimator wrote it."
+}
