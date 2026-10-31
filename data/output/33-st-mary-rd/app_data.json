@@ -1,6 +1,6 @@
 {
  "format": "takeoff-app/1",
- "generated": "2026-10-31T11:46:21+00:00",
+ "generated": "2026-10-31T13:35:25+00:00",
  "project": {
   "job_id": "33-st-mary-rd",
   "job": "3225",
@@ -24,14 +24,14 @@
   "drawing_page": 2,
   "drawing_title": "Loft floor plan",
   "drawing_ref": "3225-S03 DRAFT",
-  "stock_note": "Stock optimisation using available 13 m bars and the configured waste allowance."
+  "stock_note": "Bars chosen from 14, 12, 9, 7.5, 6 m stock to buy the least length, 3 mm saw cut per piece, no end trim allowed (the last piece may run to the bar end; set stock_trim_mm); the quote prices the bars bought, plates +5%."
  },
  "summary": {
   "member_mass_kg": 1349.9,
   "plate_mass_kg": 98.6,
   "net_t": 1.449,
-  "order_t": 1.520926672125,
-  "quote_total": 6312.97,
+  "order_t": 1.579226212125,
+  "quote_total": 6413.54,
   "currency": "GBP",
   "n_marks": 11,
   "n_to_verify": 18
@@ -308,10 +308,10 @@
   "items": [
    {
     "item": "Material supply",
-    "qty": 1.521,
+    "qty": 1.579,
     "unit": "t",
     "rate": 1500.0,
-    "total": 2281.39
+    "total": 2368.84
    },
    {
     "item": "Fabrication",
@@ -349,14 +349,19 @@
     "total": 584.0
    }
   ],
-  "subtotal": 5489.54,
+  "subtotal": 5576.99,
   "overhead_profit_pct": 15.0,
-  "overhead_profit": 823.43,
-  "total": 6312.97,
+  "overhead_profit": 836.55,
+  "total": 6413.54,
   "procurement": {
    "net_t": 1.4485015925,
    "waste_pct": 5.0,
-   "order_t": 1.520926672125
+   "basis": "bars",
+   "order_t": 1.579226212125,
+   "bars_t": 1.476,
+   "member_net_t": 1.35,
+   "plate_t": 0.099,
+   "cut_waste_pct": 9.3
   }
  },
  "manhours": {
@@ -373,19 +378,37 @@
      "length_mm": 4934.0
     },
     {
-     "mark": "S2",
-     "length_mm": 4934.0
+     "mark": "GB1",
+     "length_mm": 3700.0
     },
     {
      "mark": "F1",
      "length_mm": 2956.0
     }
    ],
-   "offcut_mm": 176.0,
-   "stock_mm": 13000
+   "offcut_mm": 401.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
    "bar": 2,
+   "section": "203x203x46 UKC",
+   "pieces": [
+    {
+     "mark": "S2",
+     "length_mm": 4934.0
+    },
+    {
+     "mark": "FB1",
+     "length_mm": 3700.0
+    }
+   ],
+   "offcut_mm": 360.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 3,
    "section": "152x152x23 UKC",
    "pieces": [
     {
@@ -401,24 +424,9 @@
      "length_mm": 1742.0
     }
    ],
-   "offcut_mm": 4713.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 3,
-   "section": "203x203x46 UKC",
-   "pieces": [
-    {
-     "mark": "GB1",
-     "length_mm": 3700.0
-    },
-    {
-     "mark": "FB1",
-     "length_mm": 3700.0
-    }
-   ],
-   "offcut_mm": 5600.0,
-   "stock_mm": 13000
+   "offcut_mm": 704.0,
+   "stock_mm": 9000,
+   "special": false
   },
   {
    "bar": 4,
@@ -433,8 +441,9 @@
      "length_mm": 2278.0
     }
    ],
-   "offcut_mm": 7672.0,
-   "stock_mm": 13000
+   "offcut_mm": 666.0,
+   "stock_mm": 6000,
+   "special": false
   },
   {
    "bar": 5,
@@ -445,10 +454,58 @@
      "length_mm": 2278.0
     }
    ],
-   "offcut_mm": 10722.0,
-   "stock_mm": 13000
+   "offcut_mm": 3719.0,
+   "stock_mm": 6000,
+   "special": false
   }
  ],
+ "stock_order": [
+  {
+   "section": "203x203x46 UKC",
+   "length_mm": 12000,
+   "qty": 1,
+   "kg": 553.2,
+   "special": false
+  },
+  {
+   "section": "203x203x46 UKC",
+   "length_mm": 9000,
+   "qty": 1,
+   "kg": 414.9,
+   "special": false
+  },
+  {
+   "section": "152x152x23 UKC",
+   "length_mm": 9000,
+   "qty": 1,
+   "kg": 207.0,
+   "special": false
+  },
+  {
+   "section": "152x152x37 UKC",
+   "length_mm": 6000,
+   "qty": 1,
+   "kg": 222.0,
+   "special": false
+  },
+  {
+   "section": "90x90x5.0 SHS",
+   "length_mm": 6000,
+   "qty": 1,
+   "kg": 78.6,
+   "special": false
+  }
+ ],
+ "cut_waste": {
+  "bought_kg": 1475.7,
+  "net_kg": 1349.9,
+  "bought_m": 42.0,
+  "net_m": 36.117,
+  "offcut_m": 5.85,
+  "waste_pct": 9.3,
+  "allowance_pct": 5.0,
+  "priced": true
+ },
  "assumptions": [
   {
    "mark": "GB1",
@@ -798,6 +855,27 @@
   },
   {
    "id": "CHK10",
+   "check": "stock_waste",
+   "status": "ok",
+   "text": "Material is priced on the bars the cut list buys: 1.48 t of bar for 1.35 t of members (9.3% offcut and saw waste). Most offcut: 90x90x5.0 SHS 3.72 m, 203x203x46 UKC 0.78 m, 152x152x23 UKC 0.71 m.",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "cut_waste_pct": 9.3,
+    "allowance_pct": 5.0,
+    "bought_kg": 1475.7,
+    "net_member_kg": 1349.9,
+    "offcut_m_by_section": {
+     "90x90x5.0 SHS": 3.72,
+     "203x203x46 UKC": 0.78,
+     "152x152x23 UKC": 0.71,
+     "152x152x37 UKC": 0.67
+    },
+    "special_marks": []
+   }
+  },
+  {
+   "id": "CHK11",
    "check": "mark_count",
    "status": "skipped",
    "text": "No plan sheet with readable section or mark labels.",
@@ -808,7 +886,7 @@
    }
   },
   {
-   "id": "CHK11",
+   "id": "CHK12",
    "check": "symmetry",
    "status": "skipped",
    "text": "The steel is not mirror-symmetric about any grid line (best 69% by length), so no missing-twin check.",

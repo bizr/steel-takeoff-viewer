@@ -59,6 +59,13 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .top-project { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
 .top-project strong { display: block; font-size: 11px; margin-top: 2px; }
 .top-actions { display: flex; align-items: center; gap: 16px; }
+.export-menu { position: relative; }
+/* solid, not .floating: a backdrop-filter nested in the topbar's would blur nothing */
+.export-options { position: absolute; z-index: 5; top: calc(100% + 8px); right: 0; width: min(280px, calc(100vw - 24px)); padding: 5px; display: flex; flex-direction: column; gap: 2px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 36px rgba(23,33,31,.16), 0 2px 6px rgba(23,33,31,.06); }
+.export-options button { border: 0; border-radius: 7px; padding: 8px 10px; background: transparent; text-align: left; cursor: pointer; }
+.export-options button:hover, .export-options button:focus-visible { background: #f2f4f1; outline-offset: -2px; }
+.export-options strong { display: block; font-size: 11px; }
+.export-options small { display: block; margin-top: 1px; color: var(--muted); font-size: 9.5px; line-height: 1.35; }
 .saved-state { display: flex; align-items: center; gap: 7px; color: var(--ink-soft); font-size: 9px; }
 .saved-state i, .local-note span { width: 6px; height: 6px; background: #65a58d; border-radius: 50%; }
 .sidebar { position: absolute; z-index: 30; top: 78px; left: 12px; bottom: 70px; width: 196px; padding: 12px 10px; display: flex; flex-direction: column; min-height: 0; color: #e9eeeb; background: rgba(23,33,31,.94); border-color: #ffffff12; transition: width .2s, padding .2s; }
@@ -352,6 +359,7 @@ body.utilities-collapsed .utility-rail { display: none; }
   .viewport-help, .viewport-badge, .viewport-badge strong { font-size: 10px; }
   .model-meta, .window-title, .selection-info, .legend span, .content-footer { font-size: 10px; }
   .toast { font-size: 13px; }
+  .export-options button { min-height: 48px; padding: 10px 12px; }.export-options strong { font-size: 13px; }.export-options small { font-size: 11px; }
 }
 @media (hover: none) and (pointer: coarse) { #show-shortcuts { display: none; } }
 /* Phones and portrait tablets: navigation becomes a bottom tab bar, the side

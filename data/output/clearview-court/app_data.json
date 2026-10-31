@@ -1,6 +1,6 @@
 {
  "format": "takeoff-app/1",
- "generated": "2026-10-31T11:46:49+00:00",
+ "generated": "2026-10-31T13:35:58+00:00",
  "project": {
   "job_id": "clearview-court",
   "job": "71363",
@@ -37,7 +37,6 @@
   "drawing_page": 7,
   "drawing_title": "Third floor plan",
   "drawing_ref": "71363-BR-05 PRELIMINARY",
-  "stock_note": "Stock optimisation using available 13 m bars and the configured waste allowance.",
   "sheets": [
    {
     "file": "sheets/01.dwg.json.gz",
@@ -139,14 +138,15 @@
     "source": "71363_BR-S-03_INTERIOR DOOR SCHEDULE FOURTH FLOOR & COMMUNAL AREAS.pdf",
     "label": "71363-BR-S-03 Interior door schedule 4th floor & communal"
    }
-  ]
+  ],
+  "stock_note": "Bars chosen from 14, 12, 9, 7.5, 6 m stock to buy the least length, 3 mm saw cut per piece, no end trim allowed (the last piece may run to the bar end; set stock_trim_mm); the quote prices the bars bought, plates +5%."
  },
  "summary": {
   "member_mass_kg": 44498.1,
   "plate_mass_kg": 3110.6,
   "net_t": 47.609,
-  "order_t": 49.98913433849998,
-  "quote_total": 175907.85,
+  "order_t": 51.4984252435,
+  "quote_total": 178511.38,
   "currency": "GBP",
   "n_marks": 108,
   "n_to_verify": 125
@@ -1704,10 +1704,10 @@
   "items": [
    {
     "item": "Material supply",
-    "qty": 49.989,
+    "qty": 51.498,
     "unit": "t",
     "rate": 1500.0,
-    "total": 74983.7
+    "total": 77247.64
    },
    {
     "item": "Fabrication",
@@ -1745,14 +1745,19 @@
     "total": 2884.0
    }
   ],
-  "subtotal": 152963.35,
+  "subtotal": 155227.29,
   "overhead_profit_pct": 15.0,
-  "overhead_profit": 22944.5,
-  "total": 175907.85,
+  "overhead_profit": 23284.09,
+  "total": 178511.38,
   "procurement": {
    "net_t": 47.60869936999998,
    "waste_pct": 5.0,
-   "order_t": 49.98913433849998
+   "basis": "bars",
+   "order_t": 51.4984252435,
+   "bars_t": 48.232,
+   "member_net_t": 44.498,
+   "plate_t": 3.111,
+   "cut_waste_pct": 8.4
   }
  },
  "manhours": {
@@ -1769,8 +1774,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 2,
@@ -1781,8 +1787,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 3,
@@ -1793,8 +1800,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 4,
@@ -1805,8 +1813,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 5,
@@ -1817,8 +1826,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 6,
@@ -1829,8 +1839,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 7,
@@ -1841,8 +1852,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 8,
@@ -1853,8 +1865,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 9,
@@ -1865,8 +1878,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 10,
@@ -1877,8 +1891,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 11,
@@ -1889,8 +1904,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 12,
@@ -1901,8 +1917,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 13,
@@ -1913,8 +1930,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 14,
@@ -1925,8 +1943,9 @@
      "length_mm": 12330.0
     }
    ],
-   "offcut_mm": 670.0,
-   "stock_mm": 13000
+   "offcut_mm": 1667.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 15,
@@ -1937,8 +1956,9 @@
      "length_mm": 11744.0
     }
    ],
-   "offcut_mm": 1256.0,
-   "stock_mm": 13000
+   "offcut_mm": 253.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
    "bar": 16,
@@ -1949,8 +1969,9 @@
      "length_mm": 11744.0
     }
    ],
-   "offcut_mm": 1256.0,
-   "stock_mm": 13000
+   "offcut_mm": 253.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
    "bar": 17,
@@ -1961,8 +1982,9 @@
      "length_mm": 11744.0
     }
    ],
-   "offcut_mm": 1256.0,
-   "stock_mm": 13000
+   "offcut_mm": 253.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
    "bar": 18,
@@ -1973,91 +1995,12 @@
      "length_mm": 11744.0
     }
    ],
-   "offcut_mm": 1256.0,
-   "stock_mm": 13000
+   "offcut_mm": 253.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
    "bar": 19,
-   "section": "457x191x74 UKB",
-   "pieces": [
-    {
-     "mark": "B3-19",
-     "length_mm": 11006.0
-    }
-   ],
-   "offcut_mm": 1994.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 20,
-   "section": "457x191x74 UKB",
-   "pieces": [
-    {
-     "mark": "B3-20",
-     "length_mm": 11006.0
-    }
-   ],
-   "offcut_mm": 1994.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 21,
-   "section": "457x191x74 UKB",
-   "pieces": [
-    {
-     "mark": "B4-19",
-     "length_mm": 11006.0
-    }
-   ],
-   "offcut_mm": 1994.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 22,
-   "section": "457x191x74 UKB",
-   "pieces": [
-    {
-     "mark": "B4-20",
-     "length_mm": 11006.0
-    }
-   ],
-   "offcut_mm": 1994.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 23,
-   "section": "203x203x46 UKC",
-   "pieces": [
-    {
-     "mark": "R-01",
-     "length_mm": 9593.0
-    },
-    {
-     "mark": "R-11",
-     "length_mm": 2700.0
-    }
-   ],
-   "offcut_mm": 707.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 24,
-   "section": "203x203x46 UKC",
-   "pieces": [
-    {
-     "mark": "R-02",
-     "length_mm": 9593.0
-    },
-    {
-     "mark": "R-12",
-     "length_mm": 2700.0
-    }
-   ],
-   "offcut_mm": 707.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 25,
    "section": "457x191x67 UKB",
    "pieces": [
     {
@@ -2065,11 +2008,12 @@
      "length_mm": 9256.0
     }
    ],
-   "offcut_mm": 3744.0,
-   "stock_mm": 13000
+   "offcut_mm": 2741.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 26,
+   "bar": 20,
    "section": "457x191x67 UKB",
    "pieces": [
     {
@@ -2077,11 +2021,12 @@
      "length_mm": 9256.0
     }
    ],
-   "offcut_mm": 3744.0,
-   "stock_mm": 13000
+   "offcut_mm": 2741.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 27,
+   "bar": 21,
    "section": "457x191x67 UKB",
    "pieces": [
     {
@@ -2089,11 +2034,12 @@
      "length_mm": 8810.0
     }
    ],
-   "offcut_mm": 4190.0,
-   "stock_mm": 13000
+   "offcut_mm": 187.0,
+   "stock_mm": 9000,
+   "special": false
   },
   {
-   "bar": 28,
+   "bar": 22,
    "section": "457x191x67 UKB",
    "pieces": [
     {
@@ -2101,35 +2047,12 @@
      "length_mm": 8810.0
     }
    ],
-   "offcut_mm": 4190.0,
-   "stock_mm": 13000
+   "offcut_mm": 187.0,
+   "stock_mm": 9000,
+   "special": false
   },
   {
-   "bar": 29,
-   "section": "406x178x54 UKB",
-   "pieces": [
-    {
-     "mark": "B3-05",
-     "length_mm": 8692.0
-    }
-   ],
-   "offcut_mm": 4308.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 30,
-   "section": "406x178x54 UKB",
-   "pieces": [
-    {
-     "mark": "B4-05",
-     "length_mm": 8692.0
-    }
-   ],
-   "offcut_mm": 4308.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 31,
+   "bar": 23,
    "section": "457x191x67 UKB",
    "pieces": [
     {
@@ -2137,35 +2060,12 @@
      "length_mm": 8607.0
     }
    ],
-   "offcut_mm": 4393.0,
-   "stock_mm": 13000
+   "offcut_mm": 390.0,
+   "stock_mm": 9000,
+   "special": false
   },
   {
-   "bar": 32,
-   "section": "406x178x54 UKB",
-   "pieces": [
-    {
-     "mark": "B3-03",
-     "length_mm": 8607.0
-    }
-   ],
-   "offcut_mm": 4393.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 33,
-   "section": "406x178x54 UKB",
-   "pieces": [
-    {
-     "mark": "B3-07",
-     "length_mm": 8607.0
-    }
-   ],
-   "offcut_mm": 4393.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 34,
+   "bar": 24,
    "section": "457x191x67 UKB",
    "pieces": [
     {
@@ -2173,11 +2073,12 @@
      "length_mm": 8607.0
     }
    ],
-   "offcut_mm": 4393.0,
-   "stock_mm": 13000
+   "offcut_mm": 390.0,
+   "stock_mm": 9000,
+   "special": false
   },
   {
-   "bar": 35,
+   "bar": 25,
    "section": "457x191x67 UKB",
    "pieces": [
     {
@@ -2185,35 +2086,12 @@
      "length_mm": 8607.0
     }
    ],
-   "offcut_mm": 4393.0,
-   "stock_mm": 13000
+   "offcut_mm": 390.0,
+   "stock_mm": 9000,
+   "special": false
   },
   {
-   "bar": 36,
-   "section": "406x178x54 UKB",
-   "pieces": [
-    {
-     "mark": "B4-03",
-     "length_mm": 8607.0
-    }
-   ],
-   "offcut_mm": 4393.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 37,
-   "section": "406x178x54 UKB",
-   "pieces": [
-    {
-     "mark": "B4-07",
-     "length_mm": 8607.0
-    }
-   ],
-   "offcut_mm": 4393.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 38,
+   "bar": 26,
    "section": "457x191x67 UKB",
    "pieces": [
     {
@@ -2221,211 +2099,64 @@
      "length_mm": 8607.0
     }
    ],
-   "offcut_mm": 4393.0,
-   "stock_mm": 13000
+   "offcut_mm": 390.0,
+   "stock_mm": 9000,
+   "special": false
   },
   {
-   "bar": 39,
-   "section": "406x178x54 UKB",
+   "bar": 27,
+   "section": "457x191x74 UKB",
    "pieces": [
     {
-     "mark": "B3-04",
-     "length_mm": 8367.0
+     "mark": "B3-19",
+     "length_mm": 11006.0
     }
    ],
-   "offcut_mm": 4633.0,
-   "stock_mm": 13000
+   "offcut_mm": 991.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 40,
-   "section": "406x178x54 UKB",
+   "bar": 28,
+   "section": "457x191x74 UKB",
    "pieces": [
     {
-     "mark": "B3-06",
-     "length_mm": 8367.0
+     "mark": "B3-20",
+     "length_mm": 11006.0
     }
    ],
-   "offcut_mm": 4633.0,
-   "stock_mm": 13000
+   "offcut_mm": 991.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 41,
-   "section": "406x178x54 UKB",
+   "bar": 29,
+   "section": "457x191x74 UKB",
    "pieces": [
     {
-     "mark": "B4-04",
-     "length_mm": 8367.0
+     "mark": "B4-19",
+     "length_mm": 11006.0
     }
    ],
-   "offcut_mm": 4633.0,
-   "stock_mm": 13000
+   "offcut_mm": 991.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 42,
-   "section": "406x178x54 UKB",
+   "bar": 30,
+   "section": "457x191x74 UKB",
    "pieces": [
     {
-     "mark": "B4-06",
-     "length_mm": 8367.0
+     "mark": "B4-20",
+     "length_mm": 11006.0
     }
    ],
-   "offcut_mm": 4633.0,
-   "stock_mm": 13000
+   "offcut_mm": 991.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 43,
-   "section": "203x203x46 UKC",
-   "pieces": [
-    {
-     "mark": "R-03",
-     "length_mm": 7800.0
-    },
-    {
-     "mark": "BT2",
-     "length_mm": 3757.0
-    }
-   ],
-   "offcut_mm": 1443.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 44,
-   "section": "203x203x46 UKC",
-   "pieces": [
-    {
-     "mark": "R-04",
-     "length_mm": 7800.0
-    },
-    {
-     "mark": "BT1",
-     "length_mm": 3634.0
-    }
-   ],
-   "offcut_mm": 1566.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 45,
-   "section": "305x165x40 UKB",
-   "pieces": [
-    {
-     "mark": "B3-25",
-     "length_mm": 6907.0
-    }
-   ],
-   "offcut_mm": 6093.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 46,
-   "section": "305x165x40 UKB",
-   "pieces": [
-    {
-     "mark": "B4-25",
-     "length_mm": 6907.0
-    }
-   ],
-   "offcut_mm": 6093.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 47,
-   "section": "356x171x51 UKB",
-   "pieces": [
-    {
-     "mark": "B3-34",
-     "length_mm": 6898.0
-    }
-   ],
-   "offcut_mm": 6102.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 48,
-   "section": "356x171x51 UKB",
-   "pieces": [
-    {
-     "mark": "B4-34",
-     "length_mm": 6898.0
-    }
-   ],
-   "offcut_mm": 6102.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 49,
-   "section": "356x171x51 UKB",
-   "pieces": [
-    {
-     "mark": "B3-33",
-     "length_mm": 6897.0
-    }
-   ],
-   "offcut_mm": 6103.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 50,
-   "section": "356x171x51 UKB",
-   "pieces": [
-    {
-     "mark": "B4-33",
-     "length_mm": 6897.0
-    }
-   ],
-   "offcut_mm": 6103.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 51,
-   "section": "305x305x118 UKC",
-   "pieces": [
-    {
-     "mark": "B3-17",
-     "length_mm": 6721.0
-    }
-   ],
-   "offcut_mm": 6279.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 52,
-   "section": "356x171x67 UKB",
-   "pieces": [
-    {
-     "mark": "B3-18",
-     "length_mm": 6721.0
-    }
-   ],
-   "offcut_mm": 6279.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 53,
-   "section": "305x305x118 UKC",
-   "pieces": [
-    {
-     "mark": "B4-17",
-     "length_mm": 6721.0
-    }
-   ],
-   "offcut_mm": 6279.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 54,
-   "section": "305x305x118 UKC",
-   "pieces": [
-    {
-     "mark": "B4-18",
-     "length_mm": 6721.0
-    }
-   ],
-   "offcut_mm": 6279.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 55,
+   "bar": 31,
    "section": "203x203x46 UKC",
    "pieces": [
     {
@@ -2433,175 +2164,84 @@
      "length_mm": 6721.0
     },
     {
+     "mark": "R-10",
+     "length_mm": 6721.0
+    }
+   ],
+   "offcut_mm": 552.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 32,
+   "section": "203x203x46 UKC",
+   "pieces": [
+    {
+     "mark": "R-01",
+     "length_mm": 9593.0
+    },
+    {
+     "mark": "BT2",
+     "length_mm": 3757.0
+    }
+   ],
+   "offcut_mm": 644.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 33,
+   "section": "203x203x46 UKC",
+   "pieces": [
+    {
+     "mark": "R-03",
+     "length_mm": 7800.0
+    },
+    {
      "mark": "R-05",
      "length_mm": 5475.0
     }
    ],
-   "offcut_mm": 804.0,
-   "stock_mm": 13000
+   "offcut_mm": 719.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
-   "bar": 56,
+   "bar": 34,
    "section": "203x203x46 UKC",
    "pieces": [
     {
-     "mark": "R-10",
-     "length_mm": 6721.0
+     "mark": "R-04",
+     "length_mm": 7800.0
     },
     {
      "mark": "R-07",
      "length_mm": 5475.0
     }
    ],
-   "offcut_mm": 804.0,
-   "stock_mm": 13000
+   "offcut_mm": 719.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
-   "bar": 57,
-   "section": "305x165x40 UKB",
+   "bar": 35,
+   "section": "203x203x46 UKC",
    "pieces": [
     {
-     "mark": "B3-22",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 58,
-   "section": "356x171x51 UKB",
-   "pieces": [
+     "mark": "R-02",
+     "length_mm": 9593.0
+    },
     {
-     "mark": "B3-23",
-     "length_mm": 6582.0
+     "mark": "BT1",
+     "length_mm": 3634.0
     }
    ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
+   "offcut_mm": 767.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
-   "bar": 59,
-   "section": "305x165x40 UKB",
-   "pieces": [
-    {
-     "mark": "B3-24",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 60,
-   "section": "305x165x40 UKB",
-   "pieces": [
-    {
-     "mark": "B3-26",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 61,
-   "section": "305x165x40 UKB",
-   "pieces": [
-    {
-     "mark": "B3-27",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 62,
-   "section": "356x171x51 UKB",
-   "pieces": [
-    {
-     "mark": "B3-28",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 63,
-   "section": "305x165x40 UKB",
-   "pieces": [
-    {
-     "mark": "B4-22",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 64,
-   "section": "356x171x51 UKB",
-   "pieces": [
-    {
-     "mark": "B4-23",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 65,
-   "section": "305x165x40 UKB",
-   "pieces": [
-    {
-     "mark": "B4-24",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 66,
-   "section": "305x165x40 UKB",
-   "pieces": [
-    {
-     "mark": "B4-26",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 67,
-   "section": "305x165x40 UKB",
-   "pieces": [
-    {
-     "mark": "B4-27",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 68,
-   "section": "356x171x51 UKB",
-   "pieces": [
-    {
-     "mark": "B4-28",
-     "length_mm": 6582.0
-    }
-   ],
-   "offcut_mm": 6418.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 69,
+   "bar": 36,
    "section": "203x203x46 UKC",
    "pieces": [
     {
@@ -2613,11 +2253,355 @@
      "length_mm": 5410.0
     }
    ],
-   "offcut_mm": 2180.0,
-   "stock_mm": 13000
+   "offcut_mm": 1174.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 70,
+   "bar": 37,
+   "section": "203x203x46 UKC",
+   "pieces": [
+    {
+     "mark": "R-11",
+     "length_mm": 2700.0
+    },
+    {
+     "mark": "R-12",
+     "length_mm": 2700.0
+    }
+   ],
+   "offcut_mm": 594.0,
+   "stock_mm": 6000,
+   "special": false
+  },
+  {
+   "bar": 38,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B3-05",
+     "length_mm": 8692.0
+    }
+   ],
+   "offcut_mm": 305.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 39,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B4-05",
+     "length_mm": 8692.0
+    }
+   ],
+   "offcut_mm": 305.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 40,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B3-03",
+     "length_mm": 8607.0
+    }
+   ],
+   "offcut_mm": 390.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 41,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B3-07",
+     "length_mm": 8607.0
+    }
+   ],
+   "offcut_mm": 390.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 42,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B4-03",
+     "length_mm": 8607.0
+    }
+   ],
+   "offcut_mm": 390.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 43,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B4-07",
+     "length_mm": 8607.0
+    }
+   ],
+   "offcut_mm": 390.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 44,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B3-04",
+     "length_mm": 8367.0
+    }
+   ],
+   "offcut_mm": 630.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 45,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B3-06",
+     "length_mm": 8367.0
+    }
+   ],
+   "offcut_mm": 630.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 46,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B4-04",
+     "length_mm": 8367.0
+    }
+   ],
+   "offcut_mm": 630.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 47,
+   "section": "406x178x54 UKB",
+   "pieces": [
+    {
+     "mark": "B4-06",
+     "length_mm": 8367.0
+    }
+   ],
+   "offcut_mm": 630.0,
+   "stock_mm": 9000,
+   "special": false
+  },
+  {
+   "bar": 48,
+   "section": "305x165x40 UKB",
+   "pieces": [
+    {
+     "mark": "B3-25",
+     "length_mm": 6907.0
+    },
+    {
+     "mark": "B4-25",
+     "length_mm": 6907.0
+    }
+   ],
+   "offcut_mm": 180.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 49,
+   "section": "305x165x40 UKB",
+   "pieces": [
+    {
+     "mark": "B3-22",
+     "length_mm": 6582.0
+    },
+    {
+     "mark": "B3-24",
+     "length_mm": 6582.0
+    }
+   ],
+   "offcut_mm": 830.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 50,
+   "section": "305x165x40 UKB",
+   "pieces": [
+    {
+     "mark": "B3-26",
+     "length_mm": 6582.0
+    },
+    {
+     "mark": "B3-27",
+     "length_mm": 6582.0
+    }
+   ],
+   "offcut_mm": 830.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 51,
+   "section": "305x165x40 UKB",
+   "pieces": [
+    {
+     "mark": "B4-22",
+     "length_mm": 6582.0
+    },
+    {
+     "mark": "B4-24",
+     "length_mm": 6582.0
+    }
+   ],
+   "offcut_mm": 830.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 52,
+   "section": "305x165x40 UKB",
+   "pieces": [
+    {
+     "mark": "B4-26",
+     "length_mm": 6582.0
+    },
+    {
+     "mark": "B4-27",
+     "length_mm": 6582.0
+    }
+   ],
+   "offcut_mm": 830.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 53,
+   "section": "356x171x51 UKB",
+   "pieces": [
+    {
+     "mark": "B3-34",
+     "length_mm": 6898.0
+    },
+    {
+     "mark": "B4-34",
+     "length_mm": 6898.0
+    }
+   ],
+   "offcut_mm": 198.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 54,
+   "section": "356x171x51 UKB",
+   "pieces": [
+    {
+     "mark": "B3-33",
+     "length_mm": 6897.0
+    },
+    {
+     "mark": "B4-33",
+     "length_mm": 6897.0
+    }
+   ],
+   "offcut_mm": 200.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 55,
+   "section": "356x171x51 UKB",
+   "pieces": [
+    {
+     "mark": "B3-23",
+     "length_mm": 6582.0
+    },
+    {
+     "mark": "B3-28",
+     "length_mm": 6582.0
+    }
+   ],
+   "offcut_mm": 830.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 56,
+   "section": "356x171x51 UKB",
+   "pieces": [
+    {
+     "mark": "B4-23",
+     "length_mm": 6582.0
+    },
+    {
+     "mark": "B4-28",
+     "length_mm": 6582.0
+    }
+   ],
+   "offcut_mm": 830.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 57,
+   "section": "305x305x118 UKC",
+   "pieces": [
+    {
+     "mark": "B3-17",
+     "length_mm": 6721.0
+    },
+    {
+     "mark": "B4-17",
+     "length_mm": 6721.0
+    }
+   ],
+   "offcut_mm": 552.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 58,
+   "section": "305x305x118 UKC",
+   "pieces": [
+    {
+     "mark": "B4-18",
+     "length_mm": 6721.0
+    }
+   ],
+   "offcut_mm": 776.0,
+   "stock_mm": 7500,
+   "special": false
+  },
+  {
+   "bar": 59,
+   "section": "356x171x67 UKB",
+   "pieces": [
+    {
+     "mark": "B3-18",
+     "length_mm": 6721.0
+    }
+   ],
+   "offcut_mm": 776.0,
+   "stock_mm": 7500,
+   "special": false
+  },
+  {
+   "bar": 60,
    "section": "100x100x6.3 SHS",
    "pieces": [
     {
@@ -2631,25 +2615,18 @@
     {
      "mark": "RP1",
      "length_mm": 3329.0
-    }
-   ],
-   "offcut_mm": 3013.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 71,
-   "section": "100x100x6.3 SHS",
-   "pieces": [
+    },
     {
      "mark": "RP1",
      "length_mm": 3329.0
     }
    ],
-   "offcut_mm": 9671.0,
-   "stock_mm": 13000
+   "offcut_mm": 672.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
-   "bar": 72,
+   "bar": 61,
    "section": "203x133x25 UKB",
    "pieces": [
     {
@@ -2665,152 +2642,144 @@
      "length_mm": 3159.0
     },
     {
-     "mark": "B4-12",
-     "length_mm": 3159.0
-    }
-   ],
-   "offcut_mm": 356.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 73,
-   "section": "254x146x31 UKB",
-   "pieces": [
-    {
-     "mark": "B3-15",
-     "length_mm": 3163.0
-    },
-    {
-     "mark": "B4-15",
-     "length_mm": 3163.0
-    },
-    {
-     "mark": "B3-14",
-     "length_mm": 3159.0
-    },
-    {
-     "mark": "B4-14",
-     "length_mm": 3159.0
-    }
-   ],
-   "offcut_mm": 356.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 74,
-   "section": "254x146x31 UKB",
-   "pieces": [
-    {
-     "mark": "B3-02",
-     "length_mm": 3150.0
-    },
-    {
-     "mark": "B3-08",
-     "length_mm": 3150.0
-    },
-    {
-     "mark": "B4-02",
-     "length_mm": 3150.0
-    },
-    {
-     "mark": "B4-08",
-     "length_mm": 3150.0
-    }
-   ],
-   "offcut_mm": 400.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 75,
-   "section": "203x133x25 UKB",
-   "pieces": [
-    {
      "mark": "BF1",
      "length_mm": 3150.0
     },
-    {
-     "mark": "BF1",
-     "length_mm": 3150.0
-    },
-    {
-     "mark": "BF1",
-     "length_mm": 3150.0
-    },
-    {
-     "mark": "BF1",
-     "length_mm": 3150.0
-    }
-   ],
-   "offcut_mm": 400.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 76,
-   "section": "203x133x25 UKB",
-   "pieces": [
-    {
-     "mark": "BF1",
-     "length_mm": 3150.0
-    },
-    {
-     "mark": "BF1",
-     "length_mm": 3150.0
-    },
-    {
-     "mark": "BF1",
-     "length_mm": 3150.0
-    },
-    {
-     "mark": "BF1",
-     "length_mm": 3150.0
-    }
-   ],
-   "offcut_mm": 400.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 77,
-   "section": "200x90x30 PFC",
-   "pieces": [
-    {
-     "mark": "ST-LB3",
-     "length_mm": 2198.0
-    },
-    {
-     "mark": "ST-LB4",
-     "length_mm": 2198.0
-    },
-    {
-     "mark": "ST-HL2",
-     "length_mm": 2052.0
-    },
-    {
-     "mark": "ST-HL3",
-     "length_mm": 2052.0
-    },
-    {
-     "mark": "ST-HLW",
-     "length_mm": 2052.0
-    },
-    {
-     "mark": "ST-HLW",
-     "length_mm": 2052.0
-    }
-   ],
-   "offcut_mm": 396.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 78,
-   "section": "203x133x25 UKB",
-   "pieces": [
     {
      "mark": "B3-29",
      "length_mm": 1353.0
+    }
+   ],
+   "offcut_mm": 0.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 62,
+   "section": "203x133x25 UKB",
+   "pieces": [
+    {
+     "mark": "BF1",
+     "length_mm": 3150.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    }
+   ],
+   "offcut_mm": 7.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 63,
+   "section": "203x133x25 UKB",
+   "pieces": [
+    {
+     "mark": "BF1",
+     "length_mm": 3150.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    },
+    {
+     "mark": "BF3",
+     "length_mm": 1352.0
+    }
+   ],
+   "offcut_mm": 7.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 64,
+   "section": "203x133x25 UKB",
+   "pieces": [
+    {
+     "mark": "BF1",
+     "length_mm": 3150.0
+    },
+    {
+     "mark": "BF1",
+     "length_mm": 3150.0
+    },
+    {
+     "mark": "BF1",
+     "length_mm": 3150.0
+    },
+    {
+     "mark": "BF1",
+     "length_mm": 3150.0
     },
     {
      "mark": "B3-31",
      "length_mm": 1353.0
+    }
+   ],
+   "offcut_mm": 32.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 65,
+   "section": "203x133x25 UKB",
+   "pieces": [
+    {
+     "mark": "B4-12",
+     "length_mm": 3159.0
     },
     {
      "mark": "B4-29",
@@ -2821,88 +2790,37 @@
      "length_mm": 1353.0
     },
     {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    }
-   ],
-   "offcut_mm": 828.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 79,
-   "section": "203x133x25 UKB",
-   "pieces": [
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    }
-   ],
-   "offcut_mm": 832.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 80,
-   "section": "203x133x25 UKB",
-   "pieces": [
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
-     "mark": "BF3",
-     "length_mm": 1352.0
-    },
-    {
      "mark": "B3-30",
      "length_mm": 1351.0
+    },
+    {
+     "mark": "BF2",
+     "length_mm": 1167.0
+    },
+    {
+     "mark": "BF2",
+     "length_mm": 1167.0
+    },
+    {
+     "mark": "BF2",
+     "length_mm": 1167.0
+    },
+    {
+     "mark": "BF2",
+     "length_mm": 1167.0
+    }
+   ],
+   "offcut_mm": 92.0,
+   "stock_mm": 12000,
+   "special": false
+  },
+  {
+   "bar": 66,
+   "section": "203x133x25 UKB",
+   "pieces": [
+    {
+     "mark": "BF1",
+     "length_mm": 3150.0
     },
     {
      "mark": "B3-32",
@@ -2933,11 +2851,95 @@
      "length_mm": 1167.0
     }
    ],
-   "offcut_mm": 224.0,
-   "stock_mm": 13000
+   "offcut_mm": 105.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 81,
+   "bar": 67,
+   "section": "254x146x31 UKB",
+   "pieces": [
+    {
+     "mark": "B3-15",
+     "length_mm": 3163.0
+    },
+    {
+     "mark": "B4-15",
+     "length_mm": 3163.0
+    },
+    {
+     "mark": "B3-14",
+     "length_mm": 3159.0
+    },
+    {
+     "mark": "B4-14",
+     "length_mm": 3159.0
+    }
+   ],
+   "offcut_mm": 1344.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 68,
+   "section": "254x146x31 UKB",
+   "pieces": [
+    {
+     "mark": "B3-02",
+     "length_mm": 3150.0
+    },
+    {
+     "mark": "B3-08",
+     "length_mm": 3150.0
+    },
+    {
+     "mark": "B4-02",
+     "length_mm": 3150.0
+    },
+    {
+     "mark": "B4-08",
+     "length_mm": 3150.0
+    }
+   ],
+   "offcut_mm": 1388.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 69,
+   "section": "200x90x30 PFC",
+   "pieces": [
+    {
+     "mark": "ST-LB3",
+     "length_mm": 2198.0
+    },
+    {
+     "mark": "ST-LB4",
+     "length_mm": 2198.0
+    },
+    {
+     "mark": "ST-HL2",
+     "length_mm": 2052.0
+    },
+    {
+     "mark": "ST-HL3",
+     "length_mm": 2052.0
+    },
+    {
+     "mark": "ST-HLW",
+     "length_mm": 2052.0
+    },
+    {
+     "mark": "ST-HLW",
+     "length_mm": 2052.0
+    }
+   ],
+   "offcut_mm": 1378.0,
+   "stock_mm": 14000,
+   "special": false
+  },
+  {
+   "bar": 70,
    "section": "100x50x8.0 RHS",
    "pieces": [
     {
@@ -2975,13 +2977,18 @@
     {
      "mark": "BJ1",
      "length_mm": 1350.0
+    },
+    {
+     "mark": "BJ1",
+     "length_mm": 1350.0
     }
    ],
-   "offcut_mm": 850.0,
-   "stock_mm": 13000
+   "offcut_mm": 470.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
-   "bar": 82,
+   "bar": 71,
    "section": "100x50x8.0 RHS",
    "pieces": [
     {
@@ -3019,13 +3026,18 @@
     {
      "mark": "BJ1",
      "length_mm": 1350.0
+    },
+    {
+     "mark": "BJ1",
+     "length_mm": 1350.0
     }
    ],
-   "offcut_mm": 850.0,
-   "stock_mm": 13000
+   "offcut_mm": 470.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
-   "bar": 83,
+   "bar": 72,
    "section": "100x50x8.0 RHS",
    "pieces": [
     {
@@ -3043,21 +3055,14 @@
     {
      "mark": "BJ1",
      "length_mm": 1350.0
-    },
-    {
-     "mark": "BJ1",
-     "length_mm": 1350.0
-    },
-    {
-     "mark": "BJ1",
-     "length_mm": 1350.0
     }
    ],
-   "offcut_mm": 4900.0,
-   "stock_mm": 13000
+   "offcut_mm": 588.0,
+   "stock_mm": 6000,
+   "special": false
   },
   {
-   "bar": 84,
+   "bar": 73,
    "section": "80x80x5.0 SHS",
    "pieces": [
     {
@@ -3089,34 +3094,170 @@
      "length_mm": 1296.0
     }
    ],
-   "offcut_mm": 3828.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 85,
-   "section": "203x133x25 UKB",
-   "pieces": [
-    {
-     "mark": "BF2",
-     "length_mm": 1167.0
-    },
-    {
-     "mark": "BF2",
-     "length_mm": 1167.0
-    },
-    {
-     "mark": "BF2",
-     "length_mm": 1167.0
-    },
-    {
-     "mark": "BF2",
-     "length_mm": 1167.0
-    }
-   ],
-   "offcut_mm": 8332.0,
-   "stock_mm": 13000
+   "offcut_mm": 2807.0,
+   "stock_mm": 12000,
+   "special": false
   }
  ],
+ "stock_order": [
+  {
+   "section": "254x254x73 UKC",
+   "length_mm": 14000,
+   "qty": 14,
+   "kg": 14327.6,
+   "special": false
+  },
+  {
+   "section": "457x191x67 UKB",
+   "length_mm": 12000,
+   "qty": 6,
+   "kg": 4831.2,
+   "special": false
+  },
+  {
+   "section": "457x191x67 UKB",
+   "length_mm": 9000,
+   "qty": 6,
+   "kg": 3623.4,
+   "special": false
+  },
+  {
+   "section": "457x191x74 UKB",
+   "length_mm": 12000,
+   "qty": 4,
+   "kg": 3566.4,
+   "special": false
+  },
+  {
+   "section": "203x203x46 UKC",
+   "length_mm": 14000,
+   "qty": 5,
+   "kg": 3227.0,
+   "special": false
+  },
+  {
+   "section": "203x203x46 UKC",
+   "length_mm": 12000,
+   "qty": 1,
+   "kg": 553.2,
+   "special": false
+  },
+  {
+   "section": "203x203x46 UKC",
+   "length_mm": 6000,
+   "qty": 1,
+   "kg": 276.6,
+   "special": false
+  },
+  {
+   "section": "406x178x54 UKB",
+   "length_mm": 9000,
+   "qty": 10,
+   "kg": 4869.0,
+   "special": false
+  },
+  {
+   "section": "305x165x40 UKB",
+   "length_mm": 14000,
+   "qty": 5,
+   "kg": 2821.0,
+   "special": false
+  },
+  {
+   "section": "356x171x51 UKB",
+   "length_mm": 14000,
+   "qty": 4,
+   "kg": 2856.0,
+   "special": false
+  },
+  {
+   "section": "305x305x118 UKC",
+   "length_mm": 14000,
+   "qty": 1,
+   "kg": 1650.6,
+   "special": false
+  },
+  {
+   "section": "305x305x118 UKC",
+   "length_mm": 7500,
+   "qty": 1,
+   "kg": 884.2,
+   "special": false
+  },
+  {
+   "section": "356x171x67 UKB",
+   "length_mm": 7500,
+   "qty": 1,
+   "kg": 503.2,
+   "special": false
+  },
+  {
+   "section": "100x100x6.3 SHS",
+   "length_mm": 14000,
+   "qty": 1,
+   "kg": 254.8,
+   "special": false
+  },
+  {
+   "section": "203x133x25 UKB",
+   "length_mm": 14000,
+   "qty": 4,
+   "kg": 1405.6,
+   "special": false
+  },
+  {
+   "section": "203x133x25 UKB",
+   "length_mm": 12000,
+   "qty": 2,
+   "kg": 602.4,
+   "special": false
+  },
+  {
+   "section": "254x146x31 UKB",
+   "length_mm": 14000,
+   "qty": 2,
+   "kg": 870.8,
+   "special": false
+  },
+  {
+   "section": "200x90x30 PFC",
+   "length_mm": 14000,
+   "qty": 1,
+   "kg": 415.8,
+   "special": false
+  },
+  {
+   "section": "100x50x8.0 RHS",
+   "length_mm": 14000,
+   "qty": 2,
+   "kg": 456.4,
+   "special": false
+  },
+  {
+   "section": "100x50x8.0 RHS",
+   "length_mm": 6000,
+   "qty": 1,
+   "kg": 97.8,
+   "special": false
+  },
+  {
+   "section": "80x80x5.0 SHS",
+   "length_mm": 12000,
+   "qty": 1,
+   "kg": 139.2,
+   "special": false
+  }
+ ],
+ "cut_waste": {
+  "bought_kg": 48232.3,
+  "net_kg": 44498.1,
+  "bought_m": 885.0,
+  "net_m": 821.885,
+  "offcut_m": 62.611,
+  "waste_pct": 8.4,
+  "allowance_pct": 5.0,
+  "priced": true
+ },
  "assumptions": [
   {
    "mark": "B3-01",
@@ -6449,6 +6590,28 @@
    "members": [],
    "pos_mm": null,
    "evidence": {}
+  },
+  {
+   "id": "CHK21",
+   "check": "stock_waste",
+   "status": "ok",
+   "text": "Material is priced on the bars the cut list buys: 48.23 t of bar for 44.50 t of members (8.4% offcut and saw waste). Most offcut: 254x254x73 UKC 23.38 m, 457x191x67 UKB 8.46 m, 203x203x46 UKC 5.21 m.",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "cut_waste_pct": 8.4,
+    "allowance_pct": 5.0,
+    "bought_kg": 48232.3,
+    "net_member_kg": 44498.1,
+    "offcut_m_by_section": {
+     "254x254x73 UKC": 23.38,
+     "457x191x67 UKB": 8.46,
+     "203x203x46 UKC": 5.21,
+     "406x178x54 UKB": 4.72,
+     "457x191x74 UKB": 3.98
+    },
+    "special_marks": []
+   }
   }
  ],
  "grids": {

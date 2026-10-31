@@ -1,6 +1,6 @@
 {
  "format": "takeoff-app/1",
- "generated": "2026-10-31T11:46:15+00:00",
+ "generated": "2026-10-31T13:35:19+00:00",
  "project": {
   "job_id": "14017",
   "job": "14017",
@@ -19,7 +19,6 @@
   "drawing_page": 0,
   "drawing_title": "Proposed second floor plan",
   "drawing_ref": "14017/04 REV C",
-  "stock_note": "Stock optimisation using available 13 m bars and the configured waste allowance.",
   "sheets": [
    {
     "file": "sheets/01.dwg.json.gz",
@@ -36,14 +35,15 @@
     "source": "14017_08b Roof Sections and Details.pdf",
     "label": "14017/08 rev B Roof Sections & Details"
    }
-  ]
+  ],
+  "stock_note": "Bars chosen from 14, 12, 9, 7.5, 6 m stock to buy the least length, 3 mm saw cut per piece, no end trim allowed (the last piece may run to the bar end; set stock_trim_mm); the quote prices the bars bought, plates +5%."
  },
  "summary": {
   "member_mass_kg": 3943.4,
   "plate_mass_kg": 201.1,
   "net_t": 4.144,
-  "order_t": 4.351716988500001,
-  "quote_total": 15990.11,
+  "order_t": 4.7282250435,
+  "quote_total": 16639.58,
   "currency": "GBP",
   "n_marks": 12,
   "n_to_verify": 19
@@ -368,10 +368,10 @@
   "items": [
    {
     "item": "Material supply",
-    "qty": 4.352,
+    "qty": 4.728,
     "unit": "t",
     "rate": 1500.0,
-    "total": 6527.58
+    "total": 7092.34
    },
    {
     "item": "Fabrication",
@@ -409,14 +409,19 @@
     "total": 520.0
    }
   ],
-  "subtotal": 13904.44,
+  "subtotal": 14469.2,
   "overhead_profit_pct": 15.0,
-  "overhead_profit": 2085.67,
-  "total": 15990.11,
+  "overhead_profit": 2170.38,
+  "total": 16639.58,
   "procurement": {
    "net_t": 4.14449237,
    "waste_pct": 5.0,
-   "order_t": 4.351716988500001
+   "basis": "bars",
+   "order_t": 4.7282250435,
+   "bars_t": 4.517,
+   "member_net_t": 3.943,
+   "plate_t": 0.201,
+   "cut_waste_pct": 14.5
   }
  },
  "manhours": {
@@ -431,10 +436,15 @@
     {
      "mark": "B1",
      "length_mm": 11280.0
+    },
+    {
+     "mark": "SF3",
+     "length_mm": 2150.0
     }
    ],
-   "offcut_mm": 1720.0,
-   "stock_mm": 13000
+   "offcut_mm": 564.0,
+   "stock_mm": 14000,
+   "special": false
   },
   {
    "bar": 2,
@@ -445,8 +455,9 @@
      "length_mm": 11280.0
     }
    ],
-   "offcut_mm": 1720.0,
-   "stock_mm": 13000
+   "offcut_mm": 717.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
    "bar": 3,
@@ -454,18 +465,53 @@
    "pieces": [
     {
      "mark": "B3",
-     "length_mm": 5981.0
+     "length_mm": 5215.0
     },
     {
      "mark": "B3",
-     "length_mm": 5215.0
+     "length_mm": 4208.0
+    },
+    {
+     "mark": "B4",
+     "length_mm": 2075.0
     }
    ],
-   "offcut_mm": 1804.0,
-   "stock_mm": 13000
+   "offcut_mm": 493.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
    "bar": 4,
+   "section": "152x152x30 UKC",
+   "pieces": [
+    {
+     "mark": "B3",
+     "length_mm": 4974.0
+    },
+    {
+     "mark": "B4",
+     "length_mm": 2075.0
+    }
+   ],
+   "offcut_mm": 445.0,
+   "stock_mm": 7500,
+   "special": false
+  },
+  {
+   "bar": 5,
+   "section": "152x152x30 UKC",
+   "pieces": [
+    {
+     "mark": "B3",
+     "length_mm": 5981.0
+    }
+   ],
+   "offcut_mm": 16.0,
+   "stock_mm": 6000,
+   "special": false
+  },
+  {
+   "bar": 6,
    "section": "152x152x23 UKC",
    "pieces": [
     {
@@ -477,11 +523,12 @@
      "length_mm": 5720.0
     }
    ],
-   "offcut_mm": 1560.0,
-   "stock_mm": 13000
+   "offcut_mm": 554.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 5,
+   "bar": 7,
    "section": "203x203x71 UKC",
    "pieces": [
     {
@@ -493,31 +540,12 @@
      "length_mm": 5219.0
     }
    ],
-   "offcut_mm": 2562.0,
-   "stock_mm": 13000
+   "offcut_mm": 1556.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
-   "bar": 6,
-   "section": "152x152x30 UKC",
-   "pieces": [
-    {
-     "mark": "B3",
-     "length_mm": 4974.0
-    },
-    {
-     "mark": "B3",
-     "length_mm": 4208.0
-    },
-    {
-     "mark": "B4",
-     "length_mm": 2075.0
-    }
-   ],
-   "offcut_mm": 1743.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 7,
+   "bar": 8,
    "section": "152x152x37 UKC",
    "pieces": [
     {
@@ -529,28 +557,9 @@
      "length_mm": 4915.0
     }
    ],
-   "offcut_mm": 3170.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 8,
-   "section": "100x100x5.0 SHS",
-   "pieces": [
-    {
-     "mark": "SP1",
-     "length_mm": 3600.0
-    },
-    {
-     "mark": "SP1",
-     "length_mm": 3600.0
-    },
-    {
-     "mark": "SP1",
-     "length_mm": 3600.0
-    }
-   ],
-   "offcut_mm": 2200.0,
-   "stock_mm": 13000
+   "offcut_mm": 2164.0,
+   "stock_mm": 12000,
+   "special": false
   },
   {
    "bar": 9,
@@ -559,13 +568,35 @@
     {
      "mark": "SP1",
      "length_mm": 3600.0
+    },
+    {
+     "mark": "SP1",
+     "length_mm": 3600.0
     }
    ],
-   "offcut_mm": 9400.0,
-   "stock_mm": 13000
+   "offcut_mm": 294.0,
+   "stock_mm": 7500,
+   "special": false
   },
   {
    "bar": 10,
+   "section": "100x100x5.0 SHS",
+   "pieces": [
+    {
+     "mark": "SP1",
+     "length_mm": 3600.0
+    },
+    {
+     "mark": "SP1",
+     "length_mm": 3600.0
+    }
+   ],
+   "offcut_mm": 294.0,
+   "stock_mm": 7500,
+   "special": false
+  },
+  {
+   "bar": 11,
    "section": "200x100x6.3 RHS",
    "pieces": [
     {
@@ -577,11 +608,12 @@
      "length_mm": 3460.0
     }
    ],
-   "offcut_mm": 6080.0,
-   "stock_mm": 13000
+   "offcut_mm": 574.0,
+   "stock_mm": 7500,
+   "special": false
   },
   {
-   "bar": 11,
+   "bar": 12,
    "section": "180x90x26 UKPFC",
    "pieces": [
     {
@@ -597,35 +629,12 @@
      "length_mm": 2527.0
     }
    ],
-   "offcut_mm": 5415.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 12,
-   "section": "203x203x46 UKC",
-   "pieces": [
-    {
-     "mark": "SF3",
-     "length_mm": 2150.0
-    }
-   ],
-   "offcut_mm": 10850.0,
-   "stock_mm": 13000
+   "offcut_mm": 1406.0,
+   "stock_mm": 9000,
+   "special": false
   },
   {
    "bar": 13,
-   "section": "152x152x30 UKC",
-   "pieces": [
-    {
-     "mark": "B4",
-     "length_mm": 2075.0
-    }
-   ],
-   "offcut_mm": 10925.0,
-   "stock_mm": 13000
-  },
-  {
-   "bar": 14,
    "section": "203x102x23 UKB",
    "pieces": [
     {
@@ -637,11 +646,12 @@
      "length_mm": 1532.0
     }
    ],
-   "offcut_mm": 9936.0,
-   "stock_mm": 13000
+   "offcut_mm": 2930.0,
+   "stock_mm": 6000,
+   "special": false
   },
   {
-   "bar": 15,
+   "bar": 14,
    "section": "200x90x30 UKPFC",
    "pieces": [
     {
@@ -649,10 +659,114 @@
      "length_mm": 910.0
     }
    ],
-   "offcut_mm": 12090.0,
-   "stock_mm": 13000
+   "offcut_mm": 5087.0,
+   "stock_mm": 6000,
+   "special": false
   }
  ],
+ "stock_order": [
+  {
+   "section": "203x203x46 UKC",
+   "length_mm": 14000,
+   "qty": 1,
+   "kg": 645.4,
+   "special": false
+  },
+  {
+   "section": "203x203x46 UKC",
+   "length_mm": 12000,
+   "qty": 1,
+   "kg": 553.2,
+   "special": false
+  },
+  {
+   "section": "152x152x30 UKC",
+   "length_mm": 12000,
+   "qty": 1,
+   "kg": 360.0,
+   "special": false
+  },
+  {
+   "section": "152x152x30 UKC",
+   "length_mm": 7500,
+   "qty": 1,
+   "kg": 225.0,
+   "special": false
+  },
+  {
+   "section": "152x152x30 UKC",
+   "length_mm": 6000,
+   "qty": 1,
+   "kg": 180.0,
+   "special": false
+  },
+  {
+   "section": "152x152x23 UKC",
+   "length_mm": 12000,
+   "qty": 1,
+   "kg": 276.0,
+   "special": false
+  },
+  {
+   "section": "203x203x71 UKC",
+   "length_mm": 12000,
+   "qty": 1,
+   "kg": 852.0,
+   "special": false
+  },
+  {
+   "section": "152x152x37 UKC",
+   "length_mm": 12000,
+   "qty": 1,
+   "kg": 444.0,
+   "special": false
+  },
+  {
+   "section": "100x100x5.0 SHS",
+   "length_mm": 7500,
+   "qty": 2,
+   "kg": 220.5,
+   "special": false
+  },
+  {
+   "section": "200x100x6.3 RHS",
+   "length_mm": 7500,
+   "qty": 1,
+   "kg": 209.2,
+   "special": false
+  },
+  {
+   "section": "180x90x26 UKPFC",
+   "length_mm": 9000,
+   "qty": 1,
+   "kg": 234.9,
+   "special": false
+  },
+  {
+   "section": "203x102x23 UKB",
+   "length_mm": 6000,
+   "qty": 1,
+   "kg": 138.6,
+   "special": false
+  },
+  {
+   "section": "200x90x30 UKPFC",
+   "length_mm": 6000,
+   "qty": 1,
+   "kg": 178.2,
+   "special": false
+  }
+ ],
+ "cut_waste": {
+  "bought_kg": 4517.1,
+  "net_kg": 3943.4,
+  "bought_m": 131.0,
+  "net_m": 113.825,
+  "offcut_m": 17.094,
+  "waste_pct": 14.5,
+  "allowance_pct": 5.0,
+  "priced": true
+ },
  "assumptions": [
   {
    "mark": "B1",
@@ -1273,6 +1387,28 @@
    "members": [],
    "pos_mm": null,
    "evidence": {}
+  },
+  {
+   "id": "CHK13",
+   "check": "stock_waste",
+   "status": "ok",
+   "text": "Material is priced on the bars the cut list buys: 4.52 t of bar for 3.94 t of members (14.5% offcut and saw waste). Most offcut: 200x90x30 UKPFC 5.09 m, 203x102x23 UKB 2.94 m, 152x152x37 UKC 2.17 m.",
+   "members": [],
+   "pos_mm": null,
+   "evidence": {
+    "cut_waste_pct": 14.5,
+    "allowance_pct": 5.0,
+    "bought_kg": 4517.1,
+    "net_member_kg": 3943.4,
+    "offcut_m_by_section": {
+     "200x90x30 UKPFC": 5.09,
+     "203x102x23 UKB": 2.94,
+     "152x152x37 UKC": 2.17,
+     "203x203x71 UKC": 1.56,
+     "180x90x26 UKPFC": 1.42
+    },
+    "special_marks": []
+   }
   }
  ],
  "grids": {
