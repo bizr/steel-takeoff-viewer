@@ -173,7 +173,8 @@ const col3 = (value, fallback = '#202522') => value ? new THREE.Color(value[0], 
 function sheetInfo(index = state.sheetPage) {
   const project = state.data?.project ?? {};
   const count = state.dwg?.pages.length ?? 1;
-  const name = project.drawings?.length === count ? project.drawings[index] : null;
+  const sheet = project.sheets?.[index];
+  const name = sheet ? sheet.label ?? sheet.source.replace(/\.pdf$/i, '') : project.drawings?.length === count ? project.drawings[index] : null;
   if (name) {
     const [ref, ...title] = name.split(' ');
     return { ref, title: title.join(' ') || ref, label: name };
@@ -186,15 +187,25 @@ function sheetInfo(index = state.sheetPage) {
 }
 
 // Each sheet is built once into its own groups; switching only toggles visibility.
-function showSheet(index) {
+// Jobs made from sheet files (project.sheets) fetch each sheet the first time it is shown.
+async function showSheet(index) {
   if (!state.dwg) return;
   const count = state.dwg.pages.length;
   index = (index + count) % count;
   state.sheetPage = index;
+  $('#sheet-select').value = String(index);
+  if (!state.dwg.pages[index]) {
+    toast(`Loading ${sheetInfo(index).label}…`);
+    try {
+      state.dwg.pages[index] = (await fetchJSON(BASE + state.data.project.sheets[index].file)).pages[0];
+    } catch (error) {
+      return toast(`Sheet could not load: ${error.message}`);
+    }
+    if (state.sheetPage !== index) return;                 // moved on while it loaded
+  }
   if (!state.sheets.has(index)) state.sheets.set(index, buildSheet(state.dwg.pages[index]));
   for (const [key, sheet] of state.sheets) sheet.lines.visible = sheet.text.visible = key === index;
   state.sheetBounds = state.sheets.get(index).bounds;
-  $('#sheet-select').value = String(index);
   const info = sheetInfo(index);
   if (state.mode === 'drawing') {
     $('#model-meta').textContent = info.title;
@@ -387,17 +398,68 @@ function rectangleShape(width, height) {
   ]);
 }
 
+// Section library lookup: exact key, else the same normalised match as takeoff/sections.py
+// (UC = UKC, UB = UKB, UPFC = PFC, "100x100x5" = "100x100x5.0", any case / multiplication sign).
+const SECTION_ALIASES = { UC: 'UKC', UB: 'UKB', UPFC: 'PFC', UKPFC: 'PFC', L: 'EA' };
+function normaliseSection(name) {
+  let text = String(name).toUpperCase().replace(/[×*]/g, 'X').trim().replace(/\s*X\s*/g, 'X').replace(/\s+/g, ' ');
+  text = text.replace(/^L\s*(\d.*)$/, '$1 L');
+  const match = text.match(/^(\d+(?:\.\d+)?(?:X\d+(?:\.\d+)?)+)\s*([A-Z]+)?$/);
+  if (!match) return text;
+  const dims = match[1].split('X').map(part => String(Number(part)));
+  let suffix = SECTION_ALIASES[match[2]] ?? match[2] ?? '';
+  if (suffix === 'EA' && dims[0] !== dims[1]) suffix = 'UA';
+  return `${dims.join('X')} ${suffix}`.trim();
+}
+const sectionIndex = new WeakMap();
+function sectionFor(sections, name) {
+  if (!sections || !name) return null;
+  if (sections[name]) return sections[name];
+  if (!sectionIndex.has(sections)) sectionIndex.set(sections, new Map(Object.keys(sections).map(key => [normaliseSection(key), key])));
+  const key = sectionIndex.get(sections).get(normaliseSection(name));
+  return key ? sections[key] : null;
+}
+
+function profileGeometry(points, length, depth) {
+  const shape = new THREE.Shape(points.map(point => new THREE.Vector2(...point)));
+  return { geometry: new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false }), depth };
+}
+
 function memberGeometry(member, length, sections) {
-  const section = sections?.[member.section];
+  const section = sectionFor(sections, member.section);
   if (section?.shape === 'I') {
     const b = section.b / 1000, h = section.h / 1000;
     const tw = Math.max(section.tw / 1000, 0.0004), tf = section.tf / 1000;
-    const points = [
+    return profileGeometry([
       [-b / 2, -h / 2], [b / 2, -h / 2], [b / 2, -h / 2 + tf], [tw / 2, -h / 2 + tf],
       [tw / 2, h / 2 - tf], [b / 2, h / 2 - tf], [b / 2, h / 2], [-b / 2, h / 2],
       [-b / 2, h / 2 - tf], [-tw / 2, h / 2 - tf], [-tw / 2, -h / 2 + tf], [-b / 2, -h / 2 + tf],
-    ].map(point => new THREE.Vector2(...point));
-    return { geometry: new THREE.ExtrudeGeometry(new THREE.Shape(points), { depth: length, bevelEnabled: false }), depth: h };
+    ], length, h);
+  }
+  if (section?.shape === 'C') {
+    // PFC: web on local -x, toes always point local +x (same side for every member)
+    const b = section.b / 1000, h = section.h / 1000;
+    const tw = Math.max(section.tw / 1000, 0.0004), tf = section.tf / 1000;
+    return profileGeometry([
+      [-b / 2, -h / 2], [b / 2, -h / 2], [b / 2, -h / 2 + tf], [-b / 2 + tw, -h / 2 + tf],
+      [-b / 2 + tw, h / 2 - tf], [b / 2, h / 2 - tf], [b / 2, h / 2], [-b / 2, h / 2],
+    ], length, h);
+  }
+  if (section?.shape === 'L') {
+    // angle: leg h up the local -x side, leg b along the bottom, heel at bottom-left
+    const b = section.b / 1000, h = section.h / 1000, t = Math.max(section.t / 1000, 0.0004);
+    return profileGeometry([
+      [-b / 2, -h / 2], [b / 2, -h / 2], [b / 2, -h / 2 + t], [-b / 2 + t, -h / 2 + t], [-b / 2 + t, h / 2], [-b / 2, h / 2],
+    ], length, h);
+  }
+  if (section?.shape === 'CHS') {
+    const radius = section.d / 2000, thickness = Math.min(section.t / 1000, radius * 0.9);
+    const shape = new THREE.Shape();
+    shape.absarc(0, 0, radius, 0, Math.PI * 2, false);
+    const hole = new THREE.Path();
+    hole.absarc(0, 0, radius - thickness, 0, Math.PI * 2, true);
+    shape.holes.push(hole);
+    return { geometry: new THREE.ExtrudeGeometry(shape, { depth: length, bevelEnabled: false, curveSegments: 28 }), depth: radius * 2 };
   }
   const height = (section?.h ?? member.depth_mm) / 1000;
   const width = (section?.b ?? member.width_mm) / 1000;
@@ -726,12 +788,20 @@ function fillMemberDetail(mark) {
   if (!rows.length) return;
   const member = rows[0];
   const mass = rows.reduce((sum, row) => sum + row.mass_kg, 0);
-  const section = state.data.sections?.[member.section];
+  const section = sectionFor(state.data.sections, member.section);
+  const shapeRows = {
+    I: s => [['Depth h', `${s.h} mm`], ['Flange width b', `${s.b} mm`], ['Web tw', `${s.tw} mm`], ['Flange tf', `${s.tf} mm`], ['Root radius', `${s.r} mm`]],
+    C: s => [['Depth h', `${s.h} mm`], ['Flange width b', `${s.b} mm`], ['Web tw', `${s.tw} mm`], ['Flange tf', `${s.tf} mm`], ['Root radius', `${s.r} mm`]],
+    RHS: s => [['Depth h', `${s.h} mm`], ['Width b', `${s.b} mm`], ['Wall thickness', `${s.t} mm`]],
+    CHS: s => [['Outside diameter', `${s.d} mm`], ['Wall thickness', `${s.t} mm`]],
+    L: s => [['Leg h', `${s.h} mm`], ['Leg b', `${s.b} mm`], ['Thickness t', `${s.t} mm`], ...(s.r1 ? [['Root radius', `${s.r1} mm`]] : [])],
+  };
   const properties = section ? [
-    ['Depth h', `${section.h} mm`], ['Flange width b', `${section.b} mm`],
-    ...(section.shape === 'I' ? [['Web tw', `${section.tw} mm`], ['Flange tf', `${section.tf} mm`], ['Root radius', `${section.r} mm`]] : [['Wall thickness', `${section.t} mm`]]),
-    ['Unit mass', `${section.kg_m} kg/m`], ['Section area', `${section.A_cm2} cm²`],
-    ...(section.Ix_cm4 ? [['Ixx', `${fmt(section.Ix_cm4, 0)} cm⁴`], ['Iyy', `${fmt(section.Iy_cm4, 0)} cm⁴`]] : []),
+    ...(shapeRows[section.shape] ?? (s => [['Depth h', `${s.h} mm`], ['Width b', `${s.b} mm`]]))(section),
+    ...(section.kg_m != null ? [['Unit mass', `${section.kg_m} kg/m`]] : []),
+    ...(section.A_cm2 != null ? [['Section area', `${section.A_cm2} cm²`]] : []),
+    ...(section.Ix_cm4 != null ? [['Ixx', `${fmt(section.Ix_cm4, 0)} cm⁴`]] : []),
+    ...(section.Iy_cm4 != null ? [['Iyy', `${fmt(section.Iy_cm4, 0)} cm⁴`]] : []),
   ] : [];
   const joints = (state.data.connections?.joints ?? []).filter(joint => joint.members.includes(mark));
   $('#inspector-detail').innerHTML = `
@@ -1338,7 +1408,9 @@ async function loadAll() {
     const data = await fetchJSON(BASE + 'app_data.json');
     state.data = data;
     // a missing drawing only disables the 2D view, not the whole workspace
-    state.dwg = await fetchJSON(BASE + (data.project?.drawing ?? 'roof_plan.dwg.json.gz')).catch(() => null);
+    state.dwg = data.project?.sheets
+      ? { pages: data.project.sheets.map(() => null) }
+      : await fetchJSON(BASE + (data.project?.drawing ?? 'roof_plan.dwg.json.gz')).catch(() => null);
     fillProject(data.project ?? {});
     state.sheetPage = Math.min(data.project?.drawing_page ?? 0, (state.dwg?.pages.length ?? 1) - 1);
     fillSheetPicker();
